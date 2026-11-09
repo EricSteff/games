@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="description" content="Pac-Man — 1980 Namco/Midway arcade recreation with classic maze and ghost AI." />
+  <title>PAC-MAN — 1980 Arcade Recreation</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="../favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="shortcut icon" href="../favicon.ico" />
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div id="app">
+    <header class="hud">
+      <div class="hud-block">
+        <div class="label">1UP</div>
+        <div id="score" class="value">00</div>
+      </div>
+      <div class="hud-block center">
+        <div class="label">HIGH SCORE</div>
+        <div id="highscore" class="value">00</div>
+      </div>
+      <div class="hud-block right">
+        <div class="label">LEVEL</div>
+        <div id="level" class="value">1</div>
+      </div>
+    </header>
+
+    <div id="game-wrap">
+      <canvas id="game" width="448" height="496" aria-label="Pac-Man game canvas"></canvas>
+    </div>
+
+    <footer class="hud bottom">
+      <div id="lives" class="lives" aria-label="Lives remaining"></div>
+      <div id="fruit-tray" class="fruit-tray" aria-label="Level fruit indicators"></div>
+    </footer>
+
+    <p id="status" class="status" role="status">PRESS SPACE OR TAP TO START</p>
+
+    <div id="touch-controls">
+      <div class="dpad" aria-label="Direction pad">
+        <button type="button" data-dir="up" aria-label="Up"></button>
+        <button type="button" data-dir="left" aria-label="Left"></button>
+        <button type="button" data-dir="down" aria-label="Down"></button>
+        <button type="button" data-dir="right" aria-label="Right"></button>
+      </div>
+      <div class="touch-actions">
+        <button type="button" id="btn-pause">Pause</button>
+        <button type="button" id="btn-mute">Mute</button>
+      </div>
+    </div>
+
+    <p class="hint">Arrows or WASD to move. Drag on the maze. P pause · M mute · a gamepad works too.</p>
+
+    <section class="info">
+      <h1>PAC-MAN <span class="year">1980</span></h1>
+      <p class="credits">
+        Recreation of the original Namco / Midway arcade game.
+        Classic maze, ghost AI (Blinky, Pinky, Inky, Clyde), scatter/chase waves,
+        cruise Elroy, fruit bonuses, and period-accurate scoring.
+      </p>
+      <div class="legend">
+        <div><span class="dot-swatch"></span> Dot — 10 pts</div>
+        <div><span class="energizer-swatch"></span> Energizer — 50 pts</div>
+        <div><span class="ghost-swatch b"></span> Blinky — direct chase</div>
+        <div><span class="ghost-swatch p"></span> Pinky — ambush ahead</div>
+        <div><span class="ghost-swatch i"></span> Inky — flank vector</div>
+        <div><span class="ghost-swatch c"></span> Clyde — shy when close</div>
+      </div>
+    </section>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>

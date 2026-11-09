@@ -1,0 +1,10 @@
+{
+  "name": "DOOM Browser Port",
+  "short_name": "DOOM",
+  "description": "Play classic Doom shareware in the browser. No install, no file picker.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#c43c1c",
+  "lang": "en"
+}

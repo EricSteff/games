@@ -1,0 +1,2299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="theme-color" content="#05080c" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="description" content="Busy — a slip observatory for a desk. Fill the screen and keep the PC awake." />
+  <title>Busy</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="shortcut icon" href="favicon.ico" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <style>
+    :root {
+      --void: #05080c;
+      --ink: #e7fff6;
+      --dim: #7ea99a;
+      --mint: #7dffe0;
+      --gold: #f0c86a;
+      --amber: #ffb15a;
+      --line: rgba(125, 255, 224, 0.22);
+      --mono: ui-monospace, Consolas, "Cascadia Mono", monospace;
+      --ui: "Segoe UI", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      background:
+        radial-gradient(ellipse at 50% 38%, #101820 0%, var(--void) 62%);
+      color: var(--ink);
+      font-family: var(--mono);
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(125, 255, 224, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(125, 255, 224, 0.035) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(circle at 50% 42%, #000 10%, transparent 74%);
+    }
+
+    .sr {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .deck {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 8px;
+      user-select: none;
+    }
+
+    .top {
+      flex: none;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      min-height: 58px;
+      padding: 2px 4px 8px;
+      border-bottom: 1px solid var(--line);
+      box-shadow: 0 1px 0 rgba(240, 200, 106, 0.32);
+    }
+
+    .brand-lockup { display: flex; align-items: center; gap: 10px; }
+
+    .reticle {
+      width: 30px;
+      height: 30px;
+      position: relative;
+      animation: spin 16s linear infinite;
+    }
+
+    .reticle::before,
+    .reticle::after {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      border: 1px solid rgba(125, 255, 224, 0.75);
+    }
+
+    .reticle::before { border-radius: 50%; }
+    .reticle::after {
+      inset: 6px;
+      transform: rotate(45deg);
+      border-color: rgba(240, 200, 106, 0.85);
+    }
+
+    .kicker {
+      margin: 0;
+      font-family: var(--ui);
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #8fd8c4;
+    }
+
+    .brand-lockup h1 {
+      margin: 0;
+      font-family: var(--ui);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-shadow: 0 0 16px rgba(240, 200, 106, 0.35);
+    }
+
+    .epoch {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .ticker {
+      margin-right: auto;
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      color: #9fd8c8;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .epoch span { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+    .epoch i {
+      font-style: normal;
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      color: var(--dim);
+    }
+    .epoch b {
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 0.03em;
+      font-variant-numeric: tabular-nums;
+      color: var(--ink);
+    }
+
+    .hold-bay { display: flex; align-items: center; gap: 10px; }
+
+    .lamps {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      color: var(--dim);
+    }
+
+    .lamp { display: flex; align-items: center; gap: 5px; }
+    .lamp i {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #1c2824;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+    }
+    .lamp.is-on i { background: var(--mint); box-shadow: 0 0 8px var(--mint); }
+    .lamp.is-warn i { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+
+    .hold {
+      appearance: none;
+      cursor: pointer;
+      color: #c9ffe8;
+      background: linear-gradient(180deg, rgba(22, 36, 42, 0.96), rgba(6, 10, 14, 0.96));
+      border: 1px solid rgba(125, 255, 224, 0.48);
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(0, 0, 0, 0.45);
+      padding: 5px 8px 6px;
+      display: grid;
+      grid-template-columns: 12px minmax(112px, auto);
+      grid-template-rows: auto auto;
+      column-gap: 8px;
+      row-gap: 4px;
+      text-align: left;
+      font: inherit;
+      min-width: 154px;
+    }
+
+    .hold-lamp {
+      grid-row: 1;
+      width: 10px;
+      height: 10px;
+      margin-top: 3px;
+      border-radius: 50%;
+      background: #24302c;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+    }
+
+    .hold[aria-pressed="true"] .hold-lamp {
+      background: var(--mint);
+      box-shadow: 0 0 10px var(--mint);
+    }
+
+    .hold.is-partial .hold-lamp {
+      background: var(--amber);
+      box-shadow: 0 0 10px var(--amber);
+    }
+
+    .hold-copy { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; gap: 0; }
+    .hold-kicker { font-size: 9px; letter-spacing: 0.18em; color: var(--gold); }
+    .hold-name { font-size: 14px; letter-spacing: 0.16em; font-weight: 700; }
+    .hold-sub { font-size: 9px; letter-spacing: 0.14em; color: #8fd8c4; }
+    .hold-segs { grid-column: 1 / -1; display: flex; gap: 3px; }
+    .hold-segs i {
+      flex: 1;
+      height: 4px;
+      background: rgba(125, 255, 224, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45);
+    }
+    .hold[aria-pressed="true"] { border-color: rgba(125, 255, 224, 0.9); box-shadow: inset 0 0 14px rgba(125, 255, 224, 0.16), 0 0 18px rgba(125, 255, 224, 0.18); }
+    .hold[aria-pressed="true"] .hold-segs i { background: var(--mint); }
+    .hold[aria-pressed="true"] .hold-segs i:nth-child(n + 5) { background: var(--gold); }
+    .hold.is-partial { border-color: rgba(255, 177, 90, 0.8); }
+    .hold:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+    .board {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(246px, 308px) minmax(0, 1fr) minmax(236px, 318px);
+      grid-template-rows: minmax(0, 1.28fr) minmax(176px, 0.86fr);
+      gap: 8px;
+    }
+
+    .array { grid-column: 1; grid-row: 1 / span 2; }
+    .volume { grid-column: 2; grid-row: 1; }
+    .scope { grid-column: 2; grid-row: 2; }
+    .side {
+      grid-column: 3;
+      grid-row: 1 / span 2;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: 1.15fr 1fr 0.95fr 1fr;
+      gap: 8px;
+    }
+
+    .panel {
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: rgba(6, 10, 14, 0.9);
+      border: 1px solid rgba(125, 255, 224, 0.22);
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45), 0 10px 28px rgba(0, 0, 0, 0.18);
+    }
+
+    .panel header,
+    .subhead {
+      flex: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 22px;
+      padding: 0 8px;
+      background: rgba(125, 255, 224, 0.04);
+      border-bottom: 1px solid rgba(125, 255, 224, 0.14);
+      color: #8fd8c4;
+      font-family: var(--ui);
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .panel header h2,
+    .subhead h2 {
+      margin: 0;
+      font-size: 10px;
+      font-weight: 650;
+      letter-spacing: 0.18em;
+      color: #d7fff4;
+    }
+
+    .pid { color: var(--gold); font-variant-numeric: tabular-nums; }
+    .meta { margin-left: auto; color: var(--dim); letter-spacing: 0.12em; }
+    .meta.is-watch { color: var(--amber); }
+
+    .view { position: relative; flex: 1; min-height: 0; }
+    .view canvas { width: 100%; height: 100%; display: block; }
+    #volume { cursor: crosshair; }
+
+    .view::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, 0.13) 2px 3px);
+      opacity: 0.45;
+    }
+
+    .channels {
+      flex: none;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      padding: 5px 8px 4px;
+    }
+
+    .ch {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr) 78px;
+      gap: 6px;
+      align-items: center;
+      height: 16px;
+    }
+
+    .ch-name {
+      font-family: var(--ui);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #9fd8c8;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .ch-val {
+      font-size: 11px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      color: var(--ink);
+    }
+
+    .ch.is-watch .ch-name,
+    .ch.is-watch .ch-val { color: var(--amber); }
+
+    .bar {
+      height: 6px;
+      position: relative;
+      background: rgba(255, 255, 255, 0.04);
+      box-shadow: inset 0 0 0 1px rgba(125, 255, 224, 0.14);
+    }
+
+    .bar > span {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 40%;
+      background: linear-gradient(90deg, #14584c, var(--mint));
+    }
+
+    .ch.is-watch .bar > span { background: linear-gradient(90deg, #6a4010, var(--amber)); }
+
+    .log {
+      list-style: none;
+      flex: none;
+      height: 108px;
+      margin: 0;
+      padding: 4px 8px 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 2px;
+      overflow: hidden;
+      font-size: 10px;
+      line-height: 1.35;
+      color: #9fd8c8;
+    }
+
+    .log li {
+      display: grid;
+      grid-template-columns: 78px 58px minmax(0, 1fr);
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .log time { color: var(--dim); }
+    .log b { font-weight: 650; color: var(--gold); overflow: hidden; }
+    .log span { overflow: hidden; text-overflow: ellipsis; }
+    .log li.watch,
+    .log li.watch b { color: var(--amber); }
+
+    .plant {
+      flex: none;
+      display: grid;
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+      gap: 3px;
+      padding: 6px 8px 8px;
+    }
+
+    .cell {
+      min-width: 0;
+      text-align: center;
+      padding: 2px 0 1px;
+      border: 1px solid rgba(125, 255, 224, 0.2);
+      background: rgba(16, 48, 42, 0.45);
+      color: #8fd8c4;
+      font-size: 8px;
+      letter-spacing: 0.03em;
+      line-height: 1.25;
+    }
+
+    .cell span,
+    .cell b { display: block; white-space: nowrap; overflow: hidden; }
+    .cell b { font-weight: 700; color: var(--ink); }
+    .cell.is-watch {
+      color: var(--amber);
+      border-color: rgba(255, 177, 90, 0.75);
+      background: rgba(72, 36, 8, 0.55);
+    }
+    .cell.is-watch b { color: var(--amber); }
+    .cell.is-cal { color: var(--gold); border-color: rgba(240, 200, 106, 0.6); }
+    .cell.is-cal b { color: var(--gold); }
+
+    .bench {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1.05fr 0.92fr 1.12fr;
+      grid-template-rows: 1.15fr 0.95fr;
+    }
+
+    .bench .view {
+      height: 100%;
+      box-shadow: inset 1px 0 0 rgba(125, 255, 224, 0.12), inset 0 1px 0 rgba(125, 255, 224, 0.12);
+    }
+
+    .bench-eye { grid-column: 2 / span 2; }
+
+    .focus-body {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 76px;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 2px 8px;
+      padding: 6px 8px 8px;
+    }
+
+    .focus-id {
+      grid-column: 1 / -1;
+      font-size: 20px;
+      letter-spacing: 0.16em;
+      color: var(--gold);
+    }
+
+    .focus-dl {
+      grid-column: 1;
+      grid-row: 2;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 2px 8px;
+      margin: 0;
+      align-content: start;
+      font-size: 12px;
+    }
+
+    .focus-dl dt {
+      color: var(--dim);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+    }
+
+    .focus-dl dd {
+      margin: 0;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .gauge-wrap { grid-column: 2; grid-row: 2; min-height: 64px; position: relative; }
+    .gauge-wrap canvas { width: 100%; height: 100%; display: block; }
+
+    .bus {
+      flex: none;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      overflow: hidden;
+      white-space: nowrap;
+      border-top: 1px solid var(--line);
+      box-shadow: inset 0 1px 0 rgba(240, 200, 106, 0.28);
+      color: #b7e6d6;
+      font-size: 11px;
+      letter-spacing: 0.03em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 1180px) {
+      .epoch .opt,
+      .ticker { display: none; }
+    }
+
+    @media (max-width: 980px) {
+      html, body { overflow: auto; height: auto; }
+      .deck { height: auto; min-height: 100dvh; }
+      .top { grid-template-columns: 1fr auto; }
+      .epoch { display: none; }
+      .board { display: flex; flex-direction: column; height: auto; }
+      .volume { height: 68vh; min-height: 380px; }
+      .scope { height: 520px; }
+      .bench {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1.05fr 1fr 0.9fr;
+      }
+      .bench-eye { grid-column: auto; }
+      .bench-meters { grid-column: 1 / -1; }
+      .array { min-height: 560px; }
+      .side { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 210px 200px; }
+      .focus { grid-column: 1 / -1; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reticle { animation: none; }
+      .view::after { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck">
+    <header class="top">
+      <div class="brand-lockup">
+        <span class="reticle" aria-hidden="true"></span>
+        <div>
+          <p class="kicker">Slip observatory · Desk 04</p>
+          <h1>Busy</h1>
+        </div>
+      </div>
+      <div class="epoch">
+        <div class="ticker" id="ticker">TAU — · Q — · — MW</div>
+        <span><i>UTC</i><b id="utc">--:--:--.---</b></span>
+        <span><i>EPOCH</i><b id="epoch">E-20441.882</b></span>
+        <span class="opt"><i>SOL</i><b id="sol">0.00000</b></span>
+        <span class="opt"><i>SITE</i><b>29.76 N · 95.37 W</b></span>
+      </div>
+      <div class="hold-bay">
+        <div class="lamps" aria-hidden="true">
+          <span class="lamp" id="lamp-fs"><i></i>FS</span>
+          <span class="lamp" id="lamp-wake"><i></i>WAKE</span>
+        </div>
+        <button id="hold" type="button" aria-pressed="false" aria-label="Fill the screen and keep the PC awake">
+          <span class="hold-lamp" aria-hidden="true"></span>
+          <span class="hold-copy">
+            <span class="hold-kicker">SYS · FRAME</span>
+            <span class="hold-name" id="hold-name">HOLD</span>
+            <span class="hold-sub" id="hold-sub">FS + WAKE</span>
+          </span>
+          <span class="hold-segs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="board">
+      <section class="panel array" aria-label="Array">
+        <header>
+          <span class="pid">02</span>
+          <h2>Array</h2>
+          <span class="meta">ZETA</span>
+        </header>
+        <div class="channels" id="channels"></div>
+        <div class="subhead">
+          <span class="pid">06</span>
+          <h2>Taps</h2>
+          <span class="meta">16 · 4.2 ns</span>
+        </div>
+        <div class="view taps"><canvas id="taps"></canvas></div>
+        <div class="subhead">
+          <span class="pid">08</span>
+          <h2>Watch</h2>
+          <span class="meta">UTC</span>
+        </div>
+        <ol class="log" id="log"></ol>
+        <div class="subhead">
+          <span class="pid">19</span>
+          <h2>Plant</h2>
+          <span class="meta" id="plant-meta">NOMINAL</span>
+        </div>
+        <div class="plant" id="plant"></div>
+      </section>
+
+      <section class="panel volume" aria-label="Volume">
+        <header>
+          <span class="pid">04</span>
+          <h2>Volume</h2>
+          <span class="meta" id="vol-meta">QUIET</span>
+        </header>
+        <div class="view"><canvas id="volume"></canvas></div>
+      </section>
+
+      <section class="panel scope" aria-label="Bench">
+        <header>
+          <span class="pid">07</span>
+          <h2>Bench</h2>
+          <span class="meta" id="bench-meta">EYE —</span>
+        </header>
+        <div class="bench">
+          <div class="view"><canvas id="scope"></canvas></div>
+          <div class="view bench-eye"><canvas id="eye"></canvas></div>
+          <div class="view"><canvas id="pha"></canvas></div>
+          <div class="view"><canvas id="vernier"></canvas></div>
+          <div class="view bench-meters"><canvas id="meters"></canvas></div>
+        </div>
+      </section>
+
+      <div class="side">
+        <section class="panel focus" aria-label="Focus">
+          <header>
+            <span class="pid">11</span>
+            <h2>Focus</h2>
+            <span class="meta" id="focus-meta">AUTO</span>
+          </header>
+          <div class="focus-body">
+            <div class="focus-id" id="focus-id">P-00</div>
+            <dl class="focus-dl">
+              <dt>SHELL</dt><dd id="f-shell">I</dd>
+              <dt>AZ</dt><dd id="f-az">0.0°</dd>
+              <dt>PHASE</dt><dd id="f-ph">+0.000</dd>
+              <dt>TEMP</dt><dd id="f-t">4.186 K</dd>
+              <dt>RANGE</dt><dd id="f-r">1842 km</dd>
+              <dt>LOCK</dt><dd id="f-lock">1.000</dd>
+            </dl>
+            <div class="gauge-wrap"><canvas id="gauge"></canvas></div>
+          </div>
+        </section>
+        <section class="panel" aria-label="Carrier">
+          <header>
+            <span class="pid">12</span>
+            <h2>Carrier</h2>
+            <span class="meta" id="carrier-meta">2.447182 GHz</span>
+          </header>
+          <div class="view"><canvas id="spec"></canvas></div>
+        </section>
+        <section class="panel" aria-label="Portrait">
+          <header>
+            <span class="pid">13</span>
+            <h2>Portrait</h2>
+            <span class="meta">q · τ</span>
+          </header>
+          <div class="view"><canvas id="phase"></canvas></div>
+        </section>
+        <section class="panel" aria-label="Horizon">
+          <header>
+            <span class="pid">14</span>
+            <h2>Horizon</h2>
+            <span class="meta" id="horizon-meta">1842 km</span>
+          </header>
+          <div class="view"><canvas id="horizon"></canvas></div>
+        </section>
+      </div>
+    </div>
+
+    <footer class="bus" id="bus">DESK 04 · ARRAY ZETA · BOOT</footer>
+  </div>
+  <p id="hold-live" class="sr" aria-live="polite"></p>
+  <script>
+    (function () {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const YAW_RATE = 0.18;
+      const TILT = 0.58;
+      const SCOPE_N = 512;
+      const TRAIL = 420;
+
+      const volume = document.getElementById("volume");
+      const scope = document.getElementById("scope");
+      const eye = document.getElementById("eye");
+      const pha = document.getElementById("pha");
+      const vernier = document.getElementById("vernier");
+      const meters = document.getElementById("meters");
+      const taps = document.getElementById("taps");
+      const spec = document.getElementById("spec");
+      const phase = document.getElementById("phase");
+      const horizon = document.getElementById("horizon");
+      const gauge = document.getElementById("gauge");
+      const logEl = document.getElementById("log");
+      const bus = document.getElementById("bus");
+      const holdBtn = document.getElementById("hold");
+
+      const shells = [
+        { r: 0.46, n: 12 },
+        { r: 0.72, n: 18 },
+        { r: 1, n: 24 }
+      ];
+
+      const probes = [];
+      const ga = Math.PI * (3 - Math.sqrt(5));
+      shells.forEach(function (sh, si) {
+        for (let i = 0; i < sh.n; i++) {
+          const y = 1 - (i / (sh.n - 1)) * 2;
+          const rr = Math.sqrt(Math.max(0, 1 - y * y));
+          const th = ga * i + si * 0.45;
+          probes.push({
+            shell: si,
+            r: sh.r,
+            x: Math.cos(th) * rr * sh.r,
+            y: y * sh.r,
+            z: Math.sin(th) * rr * sh.r
+          });
+        }
+      });
+
+      const groups = [[], [], []];
+      probes.forEach(function (p, i) { groups[p.shell].push(i); });
+      const links = [];
+      groups.forEach(function (g) {
+        for (let i = 0; i < g.length; i++) links.push([g[i], g[(i + 1) % g.length]]);
+      });
+      for (let s = 1; s < groups.length; s++) {
+        groups[s].forEach(function (i) {
+          let best = groups[s - 1][0];
+          let bestD = Infinity;
+          const p = probes[i];
+          groups[s - 1].forEach(function (j) {
+            const q = probes[j];
+            const d = (p.x - q.x) * (p.x - q.x) + (p.y - q.y) * (p.y - q.y) + (p.z - q.z) * (p.z - q.z);
+            if (d < bestD) { bestD = d; best = j; }
+          });
+          links.push([i, best]);
+        });
+      }
+
+      const contacts = [];
+      for (let i = 0; i < 26; i++) {
+        contacts.push({
+          a: (i * 137.508) % 360,
+          r: 0.22 + ((i * 53) % 74) / 100
+        });
+      }
+
+      const PLANT = ["CR-A","CR-B","CR-C","MG-1","MG-2","MG-3","RF","TB","IO","LK-A","LK-B","HZN","OPT","SRV","VAC","PMP","S1","S2","S3","LAT","TRM","PHA","DEN","TRQ","B0","B1","B2","CLK","REF","ADC","DAC","REC"];
+      const WATCH = new Set(["LAT", "TRM", "PHA", "S2", "RF"]);
+
+      function unit(v, lo, hi) {
+        return Math.max(0.04, Math.min(1, (v - lo) / (hi - lo)));
+      }
+      function logUnit(v, lo, hi) {
+        return unit(Math.log(v), Math.log(lo), Math.log(hi));
+      }
+      function sci(n) {
+        return n.toExponential(2).replace("e+", "e");
+      }
+
+      const CHANNELS = [
+        { name: "τ slip", warn: function (s) { return s.tau > 1.852; }, text: function (s) { return s.tau.toFixed(3); }, bar: function (s) { return unit(s.tau, 1.82, 1.856); } },
+        { name: "Bφ", warn: function (s) { return s.bphi < 4.795; }, text: function (s) { return s.bphi.toFixed(3); }, bar: function (s) { return unit(s.bphi, 4.75, 4.85); } },
+        { name: "nₑ", warn: function (s) { return s.shear > 0.45; }, text: function (s) { return sci(s.ne); }, bar: function (s) { return logUnit(s.ne, 3.28e19, 3.55e19); } },
+        { name: "q", warn: function (s) { return s.q > 1.02; }, text: function (s) { return s.q.toFixed(3); }, bar: function (s) { return unit(s.q, 0.99, 1.06); } },
+        { name: "Ψ", warn: function () { return false; }, text: function (s) { return s.flux.toFixed(3); }, bar: function (s) { return unit(s.flux, 0.855, 0.91); } },
+        { name: "braid", warn: function (s) { return s.power < 590; }, text: function (s) { return Math.round(s.power) + " MW"; }, bar: function (s) { return unit(s.power, 520, 660); } },
+        { name: "cryo", warn: function (s) { return s.cryo > 4.205; }, text: function (s) { return s.cryo.toFixed(3) + " K"; }, bar: function (s) { return unit(s.cryo, 4.16, 4.23); } },
+        { name: "ν₀", warn: function () { return false; }, text: function (s) { return s.carrier.toFixed(6); }, bar: function (s) { return unit(s.carrier, 2.447165, 2.4472); } },
+        { name: "jitter", warn: function (s) { return s.jitter > 23; }, text: function (s) { return s.jitter.toFixed(1) + " ns"; }, bar: function (s) { return unit(s.jitter, 10, 32); } },
+        { name: "BER", warn: function (s) { return s.ber > 8e-12; }, text: function (s) { return sci(s.ber); }, bar: function (s) { return logUnit(s.ber, 8e-13, 2.5e-11); } },
+        { name: "scan", warn: function () { return false; }, text: function (s) { return (s.elev >= 0 ? "+" : "") + s.elev.toFixed(1) + "°"; }, bar: function (s) { return unit(s.elev, -24, 24); } },
+        { name: "lock", warn: function (s) { return s.lock < 0.95; }, text: function (s) { return s.lock.toFixed(3); }, bar: function (s) { return unit(s.lock, 0.82, 1); } },
+        { name: "range", warn: function () { return false; }, text: function (s) { return Math.round(s.range) + " km"; }, bar: function (s) { return unit(s.range, 1700, 2000); } },
+        { name: "shells", warn: function (s) { return s.shear > 0.5; }, text: function () { return "3 LIVE"; }, bar: function (s) { return s.shear > 0.5 ? 0.7 : 1; } }
+      ];
+
+      const channelRows = CHANNELS.map(function (ch) {
+        const row = document.createElement("div");
+        row.className = "ch";
+        const name = document.createElement("span");
+        name.className = "ch-name";
+        name.textContent = ch.name;
+        const bar = document.createElement("div");
+        bar.className = "bar";
+        const fill = document.createElement("span");
+        bar.appendChild(fill);
+        const val = document.createElement("span");
+        val.className = "ch-val";
+        val.textContent = "—";
+        row.append(name, bar, val);
+        document.getElementById("channels").appendChild(row);
+        return row;
+      });
+
+      const plantCells = PLANT.map(function (name) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        const lab = document.createElement("span");
+        lab.textContent = name;
+        const st = document.createElement("b");
+        st.textContent = "NOM";
+        cell.append(lab, st);
+        document.getElementById("plant").appendChild(cell);
+        return cell;
+      });
+
+      const traces = [
+        { name: "TAU", color: "#f0c86a", map: function (s) { return s.tauWave; }, read: function (s) { return s.tau.toFixed(3); } },
+        { name: "Q", color: "#ffb15a", map: function (s) { return s.qWave; }, read: function (s) { return s.q.toFixed(3); } }
+      ];
+      const scopeHist = traces.map(function () { return new Float32Array(SCOPE_N); });
+      let scopeHead = 0;
+      const trail = new Array(TRAIL);
+      let trailHead = 0;
+      const peak = new Float32Array(72);
+
+      let t = 0;
+      let last = 0;
+      let shear = 0;
+      let mode = "idle";
+      let shearT = 0;
+      let nextShear = 15;
+      let nextChat = 2.4;
+      let sampleAcc = 0;
+      let domAcc = 0;
+      let fpsAcc = 0;
+      let fpsFrames = 0;
+      let fps = 60;
+      let pinned = -1;
+      const screen = new Array(probes.length);
+
+      function signals(time, env) {
+        const s = env;
+        return {
+          shear: s,
+          tau: 1.842 + 0.006 * Math.sin(time * 0.37) + 0.014 * s,
+          bphi: 4.812 + 0.008 * Math.sin(time * 0.21 + 1.2) - 0.028 * s,
+          ne: 3.412e19 * (1 + 0.004 * Math.sin(time * 0.17) + 0.012 * s),
+          q: 1.003 + 0.0022 * Math.sin(time * 0.13) + 0.046 * s,
+          flux: 0.884 + 0.006 * Math.sin(time * 0.27 + 2) - 0.012 * s,
+          power: 612 + 7 * Math.sin(time * 0.15) - 28 * s,
+          cryo: 4.186 + 0.003 * Math.sin(time * 0.09 + 0.4) + 0.028 * s,
+          carrier: 2.447182 + 0.000011 * Math.sin(time * 0.53),
+          jitter: 18.4 + 1.5 * Math.sin(time * 0.8) + 8 * s,
+          ber: 2.4e-12 * (1 + 9 * s),
+          elev: 22 * Math.sin(time * 0.23),
+          lock: Math.max(0.84, 1 - 0.16 * s),
+          range: 1842 + 38 * Math.sin(time * 0.05) + 14 * Math.sin(time * 0.19),
+          tauWave: Math.sin(time * 7.4) * 0.62 + Math.sin(time * 2.2) * 0.28 + s * 0.9,
+          bphiWave: Math.sin(time * 5.1 + 0.6) * 0.55 + Math.sin(time * 11.2) * 0.22 - s * 0.75,
+          neWave: Math.sin(time * 3.6 + 1.1) * 0.5 + Math.sin(time * 8.2) * 0.24 + s * 0.55,
+          qWave: Math.sin(time * 4.8 + 0.4) * 0.5 + Math.sin(time * 1.6) * 0.28 + Math.min(1, s * 1.3),
+          cryoWave: Math.sin(time * 2.8 + 2) * 0.42 + Math.sin(time * 9.4) * 0.26 + s * 0.8
+        };
+      }
+
+      function probeRead(i, time, sig) {
+        const p = probes[i];
+        const az = (Math.atan2(p.z, p.x) * 180 / Math.PI + time * YAW_RATE * 180 / Math.PI + 360) % 360;
+        return {
+          id: "P-" + String(i).padStart(2, "0"),
+          shell: ["I", "II", "III"][p.shell],
+          az: az,
+          phase: Math.sin(time * 0.8 + i * 0.7) * 0.02 + p.shell * 0.003 + sig.shear * 0.012,
+          temp: sig.cryo + (i % 6) * 0.011 + Math.sin(time * 0.4 + i) * 0.005,
+          lock: Math.max(0, Math.min(1, sig.lock - ((i * 13) % 5) * 0.012 * sig.shear)),
+          range: sig.range * (0.9 + p.shell * 0.07) + (i % 9) * 3
+        };
+      }
+
+      function pushScope(sig) {
+        for (let i = 0; i < traces.length; i++) {
+          const v = traces[i].map(sig);
+          scopeHist[i][scopeHead] = Math.max(-1, Math.min(1, v));
+        }
+        scopeHead = (scopeHead + 1) % SCOPE_N;
+      }
+
+      function pushTrail(time, sig) {
+        const x = Math.sin(time * 1.7) * (0.55 + sig.shear * 0.35) + (sig.q - 1.003) * 8;
+        const y = Math.sin(time * 1.1 + 1.2) * 0.42 + Math.cos(time * 0.45) * 0.22 + (sig.tau - 1.842) * 14;
+        trail[trailHead] = { x: x, y: y };
+        trailHead = (trailHead + 1) % TRAIL;
+      }
+
+      function pad(n, w) {
+        return String(Math.trunc(Math.abs(n))).padStart(w || 2, "0");
+      }
+      function utcHMS(d) {
+        return pad(d.getUTCHours()) + ":" + pad(d.getUTCMinutes()) + ":" + pad(d.getUTCSeconds()) + "." + pad(d.getUTCMilliseconds(), 3);
+      }
+      function utcStamp(d) {
+        return d.getUTCFullYear() + "-" + pad(d.getUTCMonth() + 1) + "-" + pad(d.getUTCDate()) + "  " + utcHMS(d);
+      }
+      function solText(d) {
+        const sec = d.getUTCHours() * 3600 + d.getUTCMinutes() * 60 + d.getUTCSeconds() + d.getUTCMilliseconds() / 1000;
+        return (sec / 86400).toFixed(5);
+      }
+
+      function pushLog(source, message, tone) {
+        const li = document.createElement("li");
+        if (tone) li.className = tone;
+        const time = document.createElement("time");
+        time.dateTime = new Date().toISOString();
+        time.textContent = utcHMS(new Date());
+        const src = document.createElement("b");
+        src.textContent = source;
+        const msg = document.createElement("span");
+        msg.textContent = message;
+        li.append(time, src, msg);
+        logEl.appendChild(li);
+        while (logEl.children.length > 10) logEl.removeChild(logEl.firstChild);
+      }
+
+      function fit(canvas) {
+        const parent = canvas.parentElement;
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+        const w = Math.max(2, parent.clientWidth);
+        const h = Math.max(2, parent.clientHeight);
+        const W = Math.max(2, Math.floor(w * dpr));
+        const H = Math.max(2, Math.floor(h * dpr));
+        if (canvas.width !== W || canvas.height !== H) {
+          canvas.width = W;
+          canvas.height = H;
+        }
+        const ctx = canvas.getContext("2d");
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.lineWidth = 1;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
+        return { ctx: ctx, w: w, h: h, dpr: dpr, W: W, H: H };
+      }
+
+      function rotY(p, a) {
+        const c = Math.cos(a), s = Math.sin(a);
+        return { x: p.x * c + p.z * s, y: p.y, z: -p.x * s + p.z * c };
+      }
+      function rotX(p, a) {
+        const c = Math.cos(a), s = Math.sin(a);
+        return { x: p.x, y: p.y * c - p.z * s, z: p.y * s + p.z * c };
+      }
+      function xform(p, yaw) {
+        return rotX(rotY(p, yaw), TILT);
+      }
+      function project(p, cx, cy, scale) {
+        const f = 3.05 / (3.05 - p.z);
+        return { x: cx + p.x * scale * f, y: cy - p.y * scale * f, z: p.z, f: f };
+      }
+
+      function wire(ctx, yaw, cx, cy, scale, radius, rgb) {
+        const seg = 24;
+        function segLine(a, b) {
+          const A = project(xform(a, yaw), cx, cy, scale);
+          const B = project(xform(b, yaw), cx, cy, scale);
+          const front = ((A.z + B.z) / 2 + 1.15) / 2.3;
+          ctx.globalAlpha = 0.06 + Math.max(0, front) * 0.4;
+          ctx.beginPath();
+          ctx.moveTo(A.x, A.y);
+          ctx.lineTo(B.x, B.y);
+          ctx.strokeStyle = rgb;
+          ctx.stroke();
+        }
+        for (let m = 0; m < 7; m++) {
+          const th = (m / 7) * Math.PI * 2;
+          for (let i = 0; i < seg; i++) {
+            const u0 = i / seg;
+            const u1 = (i + 1) / seg;
+            const y0 = (u0 * 2 - 1) * radius;
+            const y1 = (u1 * 2 - 1) * radius;
+            const r0 = Math.sqrt(Math.max(0, radius * radius - y0 * y0));
+            const r1 = Math.sqrt(Math.max(0, radius * radius - y1 * y1));
+            segLine(
+              { x: Math.cos(th) * r0, y: y0, z: Math.sin(th) * r0 },
+              { x: Math.cos(th) * r1, y: y1, z: Math.sin(th) * r1 }
+            );
+          }
+        }
+        for (let p = 1; p < 6; p++) {
+          const y = ((p / 6) * 2 - 1) * radius;
+          const rr = Math.sqrt(Math.max(0, radius * radius - y * y));
+          for (let i = 0; i < seg; i++) {
+            const a0 = (i / seg) * Math.PI * 2;
+            const a1 = ((i + 1) / seg) * Math.PI * 2;
+            segLine(
+              { x: Math.cos(a0) * rr, y: y, z: Math.sin(a0) * rr },
+              { x: Math.cos(a1) * rr, y: y, z: Math.sin(a1) * rr }
+            );
+          }
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function ribbon(ctx, yaw, cx, cy, scale, phase, color) {
+        ctx.beginPath();
+        for (let i = 0; i <= 200; i++) {
+          const u = i / 200;
+          const y = (u * 2 - 1) * 0.94;
+          const rr = Math.sqrt(Math.max(0, 1 - y * y));
+          const a = phase + u * Math.PI * 6;
+          const p = project(xform({ x: Math.cos(a) * rr, y: y, z: Math.sin(a) * rr }, yaw), cx, cy, scale);
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        }
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+        ctx.lineWidth = 1;
+      }
+
+      function plate(ctx, x, y, rows) {
+        const pw = 128;
+        const ph = 8 + rows.length * 13;
+        ctx.fillStyle = "rgba(4, 8, 12, 0.66)";
+        ctx.fillRect(x, y, pw, ph);
+        ctx.strokeStyle = "rgba(125, 255, 224, 0.32)";
+        ctx.strokeRect(x + 0.5, y + 0.5, pw - 1, ph - 1);
+        ctx.font = "10px Consolas, monospace";
+        rows.forEach(function (row, i) {
+          ctx.fillStyle = row.gold ? "#f0c86a" : "#d7efe6";
+          ctx.fillText(row.text, x + 6, y + 14 + i * 13);
+        });
+      }
+
+      function drawVolume(canvas, time, sig, focus) {
+        const view = fit(canvas);
+        const ctx = view.ctx;
+        const w = view.w;
+        const h = view.h;
+        ctx.clearRect(0, 0, w, h);
+        const yaw = reduce ? 0.6 : time * YAW_RATE;
+        const cx = w > h * 1.35 ? w * 0.4 : w * 0.5;
+        const cy = h * 0.52;
+        const scale = Math.min(w * 0.3, h * 0.4);
+        const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, scale * 0.85);
+        glow.addColorStop(0, "rgba(125, 255, 224, 0.16)");
+        glow.addColorStop(0.45, "rgba(240, 200, 106, 0.04)");
+        glow.addColorStop(1, "rgba(0, 0, 0, 0)");
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(cx, cy, scale * 1.05, 0, Math.PI * 2);
+        ctx.fill();
+
+        const bezel = scale * 1.18;
+        ctx.strokeStyle = "rgba(125, 255, 224, 0.35)";
+        ctx.beginPath();
+        ctx.arc(cx, cy, bezel, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.font = "9px Consolas, monospace";
+        ctx.fillStyle = "rgba(158, 216, 204, 0.8)";
+        ctx.textAlign = "center";
+        for (let d = 0; d < 360; d += 10) {
+          const a = (d - 90) * Math.PI / 180;
+          const inner = d % 30 === 0 ? 9 : 4;
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(a) * (bezel - inner), cy + Math.sin(a) * (bezel - inner));
+          ctx.lineTo(cx + Math.cos(a) * bezel, cy + Math.sin(a) * bezel);
+          ctx.strokeStyle = "rgba(125, 255, 224, 0.4)";
+          ctx.stroke();
+          if (d % 30 === 0) ctx.fillText(String(d), cx + Math.cos(a) * (bezel + 12), cy + Math.sin(a) * (bezel + 12) + 3);
+        }
+        ctx.textAlign = "left";
+
+        wire(ctx, yaw, cx, cy, scale, 0.46, "rgba(240, 200, 106, 0.9)");
+        wire(ctx, yaw, cx, cy, scale, 0.72, "rgba(125, 255, 224, 0.9)");
+        wire(ctx, yaw, cx, cy, scale, 1, "rgba(158, 203, 255, 0.85)");
+        ribbon(ctx, yaw, cx, cy, scale, time * 0.35, "rgba(240, 200, 106, 0.85)");
+        ribbon(ctx, yaw, cx, cy, scale, Math.PI + time * -0.22, "rgba(125, 255, 224, 0.7)");
+
+        const scanY = Math.sin(time * 0.42) * 0.72;
+        ctx.beginPath();
+        for (let i = 0; i <= 64; i++) {
+          const a = (i / 64) * Math.PI * 2;
+          const rr = Math.sqrt(Math.max(0, 1 - scanY * scanY));
+          const p = project(xform({ x: Math.cos(a) * rr, y: scanY, z: Math.sin(a) * rr }, yaw), cx, cy, scale);
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        }
+        ctx.strokeStyle = sig.shear > 0.15 ? "rgba(255, 177, 90, 0.9)" : "rgba(255, 255, 255, 0.8)";
+        ctx.lineWidth = 1.3;
+        ctx.stroke();
+        ctx.lineWidth = 1;
+
+        for (let i = 0; i < probes.length; i++) {
+          const p = probes[i];
+          const q = project(xform(p, yaw), cx, cy, scale);
+          screen[i] = { x: q.x, y: q.y, z: q.z, f: q.f, i: i };
+        }
+
+        links.forEach(function (lk, n) {
+          const a = screen[lk[0]];
+          const b = screen[lk[1]];
+          const z = (a.z + b.z) / 2;
+          ctx.globalAlpha = 0.04 + Math.max(0, z + 0.4) * 0.22;
+          ctx.strokeStyle = "#7dffe0";
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+          if (!reduce && z > -0.25) {
+            const u = (time * (0.15 + (n % 5) * 0.035) + n * 0.17) % 1;
+            ctx.globalAlpha = 0.9;
+            ctx.fillStyle = n % 3 === 0 ? "#f0c86a" : "#e7fff6";
+            ctx.fillRect(a.x + (b.x - a.x) * u - 1.3, a.y + (b.y - a.y) * u - 1.3, 2.6, 2.6);
+          }
+        });
+        ctx.globalAlpha = 1;
+
+        const order = screen.map(function (_, i) { return i; }).sort(function (a, b) { return screen[a].z - screen[b].z; });
+        order.forEach(function (i) {
+          const p = screen[i];
+          const shell = probes[i].shell;
+          ctx.fillStyle = shell === 0 ? "#f0c86a" : shell === 1 ? "#7dffe0" : "#b9dcff";
+          ctx.globalAlpha = 0.28 + Math.max(0, p.z + 0.3) * 0.55;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 1.5 + p.f * 1.35, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+
+        ctx.font = "9px Consolas, monospace";
+        ctx.fillStyle = "rgba(215, 239, 230, 0.78)";
+        for (let i = 0; i < screen.length; i++) {
+          const p = screen[i];
+          if (p.z < 0.2 || i % 2 === 1) continue;
+          ctx.fillText("P" + String(i).padStart(2, "0"), p.x + 5, p.y - 4);
+        }
+
+        const fp = screen[focus];
+        if (fp) {
+          const toLeft = fp.x > cx + scale * 0.45;
+          const tagX = toLeft ? fp.x - 28 - 86 : fp.x + 28;
+          ctx.strokeStyle = "#f0c86a";
+          ctx.strokeRect(fp.x - 8, fp.y - 8, 16, 16);
+          ctx.beginPath();
+          ctx.moveTo(toLeft ? fp.x - 8 : fp.x + 8, fp.y);
+          ctx.lineTo(toLeft ? fp.x - 28 : fp.x + 28, fp.y - 16);
+          ctx.stroke();
+          const pr = probeRead(focus, time, sig);
+          ctx.fillStyle = "rgba(4, 8, 12, 0.75)";
+          ctx.fillRect(tagX, fp.y - 28, 86, 18);
+          ctx.fillStyle = "#f0c86a";
+          ctx.font = "10px Consolas, monospace";
+          ctx.fillText(pr.id + "  " + pr.shell, tagX + 4, fp.y - 15);
+        }
+
+        const slope = 0.006 * 0.37 * Math.cos(time * 0.37);
+        plate(ctx, 8, 8, [
+          { text: "PROBES   " + probes.length },
+          { text: "LOCK     " + sig.lock.toFixed(3), gold: sig.lock < 0.95 },
+          { text: "YAW      " + YAW_RATE.toFixed(3) }
+        ]);
+        plate(ctx, 8, h - 8 - (8 + 13 * 3), [
+          { text: "d tau    " + (slope >= 0 ? "+" : "") + slope.toFixed(4) },
+          { text: "q - 1    " + (sig.q - 1 >= 0 ? "+" : "") + (sig.q - 1).toFixed(3), gold: sig.q > 1.02 },
+          { text: "EL       " + (sig.elev >= 0 ? "+" : "") + sig.elev.toFixed(1) }
+        ]);
+
+        const bayX = cx + bezel + 26;
+        if (w - bayX > 132) drawBay(ctx, bayX, 8, w - 8 - bayX, h - 16, time, sig, focus);
+      }
+
+      function drawBay(ctx, x, y, bw, bh, time, sig, focus) {
+        ctx.fillStyle = "rgba(4, 8, 12, 0.55)";
+        ctx.fillRect(x, y, bw, bh);
+        ctx.strokeStyle = "rgba(125, 255, 224, 0.32)";
+        ctx.strokeRect(x + 0.5, y + 0.5, bw - 1, bh - 1);
+        const rosterCol = Math.min(128, bw - 12);
+        const split = bw - rosterCol >= 76;
+        const rosterW = split ? rosterCol : bw - 16;
+        const lockH = 12;
+        const rosterTop = y + 18;
+        const rosterBot = y + bh - lockH - 8;
+        const rowH = 13;
+        const rows = Math.max(4, Math.min(18, Math.floor((rosterBot - rosterTop) / rowH)));
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y, split ? rosterW + 12 : bw, bh);
+        ctx.clip();
+        ctx.font = "10px Consolas, monospace";
+        ctx.fillStyle = "#7ea99a";
+        ctx.fillText("ROSTER", x + 8, y + 14);
+        for (let n = 0; n < rows; n++) {
+          const i = (focus + n * 3) % probes.length;
+          const pr = probeRead(i, time, sig);
+          ctx.fillStyle = i === focus ? "#f0c86a" : "#d7efe6";
+          ctx.fillText(pr.id + " " + pr.shell + " " + pr.az.toFixed(0).padStart(3, " ") + " " + pr.lock.toFixed(3), x + 8, rosterTop + 12 + n * rowH);
+        }
+        ctx.restore();
+        const rosterEnd = rosterTop + 16 + rows * rowH;
+        let statsEnd = rosterTop;
+        let rightX = x + 8;
+        let rightW = bw - 16;
+        const foot = y + bh - lockH - 8;
+        if (split) {
+          rightX = x + 8 + rosterW + 8;
+          rightW = x + bw - 8 - rightX;
+          ctx.fillStyle = "#7ea99a";
+          ctx.font = "10px Consolas, monospace";
+          ctx.textAlign = "left";
+          ctx.fillText("PLAN", rightX, y + 14);
+          let plan = Math.min(rightW, Math.max(48, (bh - 36) * 0.42));
+          if (foot - rosterEnd > 56) {
+            const room = rosterEnd - (y + 28) - 6 * 14;
+            if (room > 64) plan = Math.min(plan, room);
+          }
+          drawPlan(ctx, rightX, y + 20, plan, time);
+          const statH = Math.max(0, foot - (y + 26 + plan));
+          drawStats(ctx, rightX, y + 26 + plan, rightW, statH, sig);
+          statsEnd = y + 26 + plan + Math.min(6, Math.floor(statH / 14)) * 14;
+        }
+        const band = Math.max(rosterEnd, statsEnd);
+        if (split && rosterEnd - statsEnd > 36 && rightW > 64) {
+          drawSectors(ctx, rightX, statsEnd + 2, rightW, rosterEnd - statsEnd - 4, time);
+        }
+        if (foot - band > 64 && bw > 150) {
+          drawSky(ctx, x + 8, band + 6, bw - 16, foot - band - 10, time, sig, focus);
+        }
+        drawLocks(ctx, x + 6, y + bh - lockH - 4, bw - 12, lockH - 2, sig);
+      }
+
+      function drawSectors(ctx, x, y, w, h, time) {
+        const bins = 24;
+        ctx.font = "10px Consolas, monospace";
+        ctx.fillStyle = "#7ea99a";
+        ctx.textAlign = "left";
+        ctx.fillText("SECTOR", x, y + 10);
+        const top = y + 16;
+        const base = y + h - 2;
+        if (base - top < 16) return;
+        const bw = w / bins;
+        const yaw = time * YAW_RATE;
+        const scan = ((time * 0.11) % 1 + 1) % 1;
+        for (let i = 0; i < bins; i++) {
+          const az = (i + 0.5) / bins;
+          let v = 0.05;
+          for (let p = 0; p < probes.length; p++) {
+            const ang = (Math.atan2(probes[p].z, probes[p].x) + yaw) / (Math.PI * 2);
+            const u = ((ang % 1) + 1) % 1;
+            const d = Math.abs(u - az);
+            const dd = Math.min(d, 1 - d);
+            v += Math.exp(-(dd * dd) / 0.0009) * (0.12 + probes[p].shell * 0.04);
+          }
+          v = Math.min(1, v);
+          const hot = Math.abs(az - scan) < 0.5 / bins || Math.abs(az - scan) > 1 - 0.5 / bins;
+          ctx.fillStyle = hot ? "#ffb15a" : (i % 2 === 0 ? "rgba(125, 255, 224, 0.8)" : "rgba(240, 200, 106, 0.72)");
+          ctx.fillRect(x + i * bw, base - v * (base - top), Math.max(1, bw - 1), v * (base - top));
+        }
+      }
+
+      function drawSky(ctx, x, y, w, h, time, sig, focus) {
+        ctx.font = "10px Consolas, monospace";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = "#7ea99a";
+        ctx.fillText("SKY", x, y + 10);
+        ctx.textAlign = "right";
+        ctx.fillStyle = Math.abs(sig.elev) > 18 ? "#ffb15a" : "#d7efe6";
+        ctx.fillText((sig.elev >= 0 ? "+" : "") + sig.elev.toFixed(1) + " EL", x + w, y + 10);
+        ctx.textAlign = "left";
+        const plotX = x + 26;
+        const plotY = y + 16;
+        const plotW = Math.max(20, w - 30);
+        const plotH = Math.max(20, h - 20);
+        ctx.fillStyle = "rgba(125, 255, 224, 0.04)";
+        ctx.fillRect(plotX, plotY, plotW, plotH);
+        ctx.strokeStyle = "rgba(125, 255, 224, 0.28)";
+        ctx.strokeRect(plotX + 0.5, plotY + 0.5, plotW - 1, plotH - 1);
+        ctx.strokeStyle = "rgba(125, 255, 224, 0.12)";
+        ctx.beginPath();
+        for (let g = 1; g < 4; g++) {
+          const gy = plotY + (plotH * g) / 4;
+          ctx.moveTo(plotX, gy);
+          ctx.lineTo(plotX + plotW, gy);
+        }
+        for (let g = 1; g < 6; g++) {
+          const gx = plotX + (plotW * g) / 6;
+          ctx.moveTo(gx, plotY);
+          ctx.lineTo(gx, plotY + plotH);
+        }
+        ctx.stroke();
+        ctx.fillStyle = "#7ea99a";
+        ctx.font = "9px Consolas, monospace";
+        ctx.fillText("+30", x, plotY + 8);
+        ctx.fillText("0", x, plotY + plotH / 2 + 3);
+        ctx.fillText("-30", x, plotY + plotH - 2);
+        const elLine = plotY + (0.5 - Math.max(-1, Math.min(1, sig.elev / 28)) * 0.46) * plotH;
+        ctx.strokeStyle = "rgba(255, 177, 90, 0.85)";
+        ctx.beginPath();
+        ctx.moveTo(plotX, elLine);
+        ctx.lineTo(plotX + plotW, elLine);
+        ctx.stroke();
+        const yaw = time * YAW_RATE;
+        for (let i = 0; i < probes.length; i++) {
+          const p = probes[i];
+          const ang = (Math.atan2(p.z, p.x) + yaw) / (Math.PI * 2);
+          const u = ((ang % 1) + 1) % 1;
+          const el = Math.max(-1, Math.min(1, p.y + Math.sin(time * 0.35 + i * 0.17) * 0.05));
+          const px = plotX + u * plotW;
+          const py = plotY + (0.5 - el * 0.46) * plotH;
+          ctx.strokeStyle = p.shell === 0 ? "rgba(240, 200, 106, 0.45)" : p.shell === 1 ? "rgba(125, 255, 224, 0.4)" : "rgba(142, 203, 255, 0.4)";
+          ctx.beginPath();
+          ctx.moveTo(px, elLine);
+          ctx.lineTo(px, py);
+          ctx.stroke();
+          ctx.fillStyle = i === focus ? "#f0c86a" : (p.shell === 0 ? "#f0c86a" : p.shell === 1 ? "#7dffe0" : "#8ecbff");
+          const s = i === focus ? 3.2 : 2.1;
+          ctx.fillRect(px - s / 2, py - s / 2, s, s);
+        }
+        const scan = ((time * 0.11) % 1 + 1) % 1;
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+        ctx.beginPath();
+        ctx.moveTo(plotX + scan * plotW, plotY);
+        ctx.lineTo(plotX + scan * plotW, plotY + plotH);
+        ctx.stroke();
+        ctx.fillStyle = "#7ea99a";
+        ctx.font = "9px Consolas, monospace";
+        ctx.textAlign = "center";
+        for (let d = 0; d <= 360; d += 60) {
+          ctx.fillText(String(d), plotX + (d / 360) * plotW, plotY + 10);
+        }
+        ctx.textAlign = "left";
+      }
+
+      function drawPlan(ctx, x, y, size, time) {
+        const cx = x + size / 2;
+        const cy = y + size / 2;
+        const R = size / 2 - 2;
+        ctx.strokeStyle = "rgba(125, 255, 224, 0.4)";
+        [0.46, 0.72, 1].forEach(function (r) {
+          ctx.beginPath();
+          ctx.arc(cx, cy, R * r, 0, Math.PI * 2);
+          ctx.stroke();
+        });
+        const yaw = time * YAW_RATE;
+        const c = Math.cos(yaw);
+        const s = Math.sin(yaw);
+        for (let i = 0; i < probes.length; i++) {
+          const p = probes[i];
+          const X = p.x * c + p.z * s;
+          const Z = -p.x * s + p.z * c;
+          ctx.fillStyle = p.shell === 0 ? "#f0c86a" : p.shell === 1 ? "#7dffe0" : "#8ecbff";
+          ctx.fillRect(cx + X * R - 1, cy + Z * R - 1, 2.2, 2.2);
+        }
+        const a = time * 0.7;
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.75)";
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R);
+        ctx.stroke();
+      }
+
+      function drawStats(ctx, x, y, w, h, sig) {
+        const rows = [
+          ["PSI", sig.flux.toFixed(3)],
+          ["MW", String(Math.round(sig.power))],
+          ["K", sig.cryo.toFixed(3)],
+          ["JIT", sig.jitter.toFixed(1)],
+          ["BER", sci(sig.ber)],
+          ["EL", (sig.elev >= 0 ? "+" : "") + sig.elev.toFixed(1)]
+        ];
+        ctx.font = "10px Consolas, monospace";
+        const n = Math.min(rows.length, Math.floor(h / 14));
+        for (let i = 0; i < n; i++) {
+          ctx.fillStyle = "#7ea99a";
+          ctx.textAlign = "left";
+          ctx.fillText(rows[i][0], x, y + 11 + i * 14);
+          ctx.fillStyle = "#e7fff6";
+          ctx.textAlign = "right";
+          ctx.fillText(rows[i][1], x + w, y + 11 + i * 14);
+        }
+        ctx.textAlign = "left";
+      }
+
+      function drawLocks(ctx, x, y, w, h, sig) {
+        const n = probes.length;
+        const cw = w / n;
+        for (let i = 0; i < n; i++) {
+          const lock = Math.max(0, Math.min(1, sig.lock - ((i * 13) % 5) * 0.012 * sig.shear));
+          ctx.globalAlpha = 0.35 + lock * 0.65;
+          ctx.fillStyle = lock < 0.9 ? "#ffb15a" : (i % 3 === 0 ? "#f0c86a" : "#1c8f78");
+          ctx.fillRect(x + i * cw, y, Math.max(1, cw - 0.5), h);
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function drawScope(canvas, sig) {
+        const view = fit(canvas);
+        const ctx = view.ctx;
+        const w = view.w;
+        const h = view.h;
+        ctx.clearRect(0, 0, w, h);
+        const lane = h / traces.length;
+        ctx.font = "10px Consolas, monospace";
+        ctx.textBaseline = "top";
+        for (let i = 0; i < traces.length; i++) {
+          const top = i * lane;
+          ctx.strokeStyle = "rgba(125, 255, 224, 0.1)";
+          ctx.beginPath();
+          for (let g = 1; g < 4; g++) {
+            const gy = top + (lane * g) / 4;
+            ctx.moveTo(36, gy);
+            ctx.lineTo(w - 6, gy);
+          }
+          ctx.stroke();
+          ctx.strokeStyle = "rgba(125, 255, 224, 0.22)";
+          ctx.beginPath();
+          ctx.moveTo(36, top + lane / 2);
+          ctx.lineTo(w - 6, top + lane / 2);
+          ctx.stroke();
+          ctx.fillStyle = traces[i].color;
+          ctx.fillText(traces[i].name, 4, top + 3);
+          if (sig) {
+            ctx.fillStyle = "#d7efe6";
+            ctx.textAlign = "right";
+            ctx.fillText(traces[i].read(sig), w - 6, top + 3);
+            ctx.textAlign = "left";
+          }
+          ctx.beginPath();
+          for (let k = 0; k < SCOPE_N; k++) {
+            const v = scopeHist[i][(scopeHead + k) % SCOPE_N];
+            const x = 36 + (k / (SCOPE_N - 1)) * (w - 44);
+            const y = top + lane * (0.5 - v * 0.38);
+            if (k === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.strokeStyle = traces[i].color;
+          ctx.globalAlpha = 0.28;
+          ctx.lineWidth = 3.2;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+          ctx.lineWidth = 1.15;
+          ctx.stroke();
+          ctx.lineWidth = 1;
+        }
+        ctx.textBaseline = "alphabetic";
+      }
+
+      function eyeOpen(sig) {
+        return Math.max(0.16, Math.min(1, 1 - sig.shear * 0.62 - Math.max(0, sig.jitter - 16) / 48));
+      }
+
+      function prbs(n) {
+        const x = Math.sin((n | 0) * 12.9898) * 43758.5453;
+        return (x - Math.floor(x)) > 0.5 ? 1 : -1;
+      }
+
+      function drawEye(canvas, time, sig) {
+        const view = fit(canvas);
+        const ctx = view.ctx;
+        const w = view.w;
+        const h = view.h;
+        ctx.clearRect(0, 0, w, h);
+        const left = 8;
+        const right = w - 8;
+        const top = 18;
+        const bot = h - 16;
+        const mid = (top + bot) / 2;
+        const open = eyeOpen(sig);
+        const amp = (bot - top) * 0.42 * open;
+        const jitPx = (0.6 + sig.jitter / 28) * (1 + sig.shear * 3);
+        ctx.strokeStyle = "rgba(125, 255, 224, 0.2)";
+        ctx.strokeRect(left, top, right - left, bot - top);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(left, top, right - left, bot - top);
+        ctx.clip();
+        ctx.beginPath();
+        ctx.moveTo(left, mid);
+        ctx.lineTo(right, mid);
+        const half = left + (right - left) / 2;
+        ctx.moveTo(half, top);
+        ctx.lineTo(half, bot);
+        ctx.stroke();
+        ctx.strokeStyle = "rgba(240, 200, 106, 0.28)";
+        ctx.beginPath();
+        ctx.moveTo(half, mid - amp * 0.72);
+        ctx.lineTo(half - (right - left) * 0.16, mid);
+        ctx.lineTo(half, mid + amp * 0.72);
+        ctx.lineTo(half + (right - left) * 0.16, mid);
+        ctx.closePath();
+        ctx.stroke();
+        const steps = 36;
+        for (let k = 0; k < 42; k++) {
+          const b0 = prbs(k * 5 + 2);
+          const b1 = prbs(k * 5 + 9);
+          const b2 = prbs(k * 5 + 4);
+          const thicken = prbs(k + 80) * (1.2 + (k % 4) * 0.45);
+          const shift = Math.sin(k * 1.7 + time * 2.4) * jitPx;
+          ctx.beginPath();
+          for (let i = 0; i <= steps; i++) {
+            const u = i / steps;
+            const x = left + u * (right - left) + shift;
+            let level;
+            if (u < 0.5) {
+              const t = u / 0.5;
+              const s = t * t * (3 - 2 * t);
+              level = b0 + (b1 - b0) * s;
+            } else {
+              const t = (u - 0.5) / 0.5;
+              const s = t * t * (3 - 2 * t);
+              level = b1 + (b2 - b1) * s;
+            }
+            const y = mid - level * amp + thicken + Math.sin(i * 0.9 + k) * (0.45 + sig.shear * 2.4);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.strokeStyle = k % 4 === 0 ? "rgba(240, 200, 106, 0.7)" : "rgba(125, 255, 224, 0.42)";
+          ctx.stroke();
+        }
+        ctx.restore();
+        ctx.fillStyle = "#7ea99a";
+        ctx.font = "10px Consolas, monospace";
+        ctx.fillText("EYE", 4, 12);
+        ctx.fillText("2 UI", w - 32, 12);
+        ctx.fillStyle = open < 0.55 ? "#ffb15a" : "#d7efe6";
+        ctx.fillText(Math.round(open * 100) + "%  " + sig.jitter.toFixed(1) + " ns", 4, h - 4);
+      }
+
+      function drawPha(canvas, time, sig) {
+        const view = fit(canvas);
+        const ctx = view.ctx;
+        const w = view.w;
+        const h = view.h;
+        ctx.clearRect(0, 0, w, h);
+        const bins = 36;
+        const left = 8;
+        const base = h - 16;
+        const top = 18;
+        const peak = Math.max(0.18, Math.min(0.86, 0.58 + (sig.ne / 3.412e19 - 1) * 6 + sig.shear * 0.1));
+        const vals = new Array(bins);
+        let max = 0.2;
+        for (let i = 0; i < bins; i++) {
+          const x = (i + 0.5) / bins;
+          let v = 0.05 + 0.03 * Math.abs(Math.sin(i * 2.3 + Math.floor(time * 4)));
+          v += Math.exp(-((x - 0.2) * (x - 0.2)) / 0.012) * 0.22;
+          v += Math.exp(-((x - peak) * (x - peak)) / 0.007) * (0.78 + sig.shear * 0.25);
+          vals[i] = v;
+          if (v > max) max = v;
+        }
+        const bw = (w - left - 8) / bins;
+        for (let i = 0; i < bins; i++) {
+          const bh = (vals[i] / max) * (base - top);
+          ctx.fillStyle = i === Math.round(peak * bins) ? "rgba(240, 200, 106, 0.95)" : "rgba(240, 200, 106, 0.45)";
+          ctx.fillRect(left + i * bw, base - bh, Math.max(1, bw - 1), bh);
+        }
+        ctx.beginPath();
+        for (let i = 0; i < bins; i++) {
+          const x = (i + 0.5) / bins;
+          const fit = Math.exp(-((x - peak) * (x - peak)) / 0.007) * (0.78 + sig.shear * 0.25);
+          const px = left + (i + 0.5) * bw;
+          const py = base - (fit / max) * (base - top);
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.strokeStyle = "#7dffe0";
+        ctx.stroke();
+        const cursor = left + peak * (w - left - 8);
+        ctx.strokeStyle = "rgba(255, 177, 90, 0.9)";
+        ctx.beginPath();
+        ctx.moveTo(cursor, top);
+        ctx.lineTo(cursor, base);
+        ctx.stroke();
+        ctx.fillStyle = "#7ea99a";
+        ctx.font = "10px Consolas, monospace";
+        ctx.fillText("PHA", 4, 12);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#d7efe6";
+        ctx.fillText("CH " + String(Math.round(peak * 255)).padStart(3, "0"), w - 6, 12);
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#7ea99a";
+        ctx.fillText("0", left, h - 4);
+        ctx.textAlign = "right";
+        ctx.fillText("255", w - 6, h - 4);
+        ctx.textAlign = "left";
+      }
+
+      function drawVernier(canvas, time, sig) {
+        const view = fit(canvas);
+        const ctx = view.ctx;
+        const w = view.w;
+        const h = view.h;
+        ctx.clearRect(0, 0, w, h);
+        ctx.font = "10px Consolas, monospace";
+        ctx.fillStyle = "#7ea99a";
+        ctx.fillText("VERNIER", 4, 12);
+        const tight = w < 196;
+        ctx.fillStyle = sig.jitter > 23 ? "#ffb15a" : "#f0c86a";
+        ctx.font = tight ? "13px Consolas, monospace" : "15px Consolas, monospace";
+        ctx.fillText(sig.jitter.toFixed(2) + " ns", 4, tight ? 28 : 30);
+        ctx.font = "10px Consolas, monospace";
+        ctx.fillStyle = "#9fd8c8";
+        if (tight) {
+          ctx.fillText((sig.jitter * 1000).toFixed(0) + " ps", 4, 42);
+        } else {
+          ctx.textAlign = "right";
+          ctx.fillText((sig.jitter * 1000).toFixed(0) + " ps", w - 6, 28);
+          ctx.textAlign = "left";
+        }
+        const y1 = tight ? Math.max(56, h * 0.5) : h * 0.48;
+        const y2 = Math.min(h - 28, y1 + (tight ? 16 : 22));
+        ctx.strokeStyle = "rgba(125, 255, 224, 0.35)";
+        ctx.beginPath();
+        ctx.moveTo(8, y1);
+        ctx.lineTo(w - 8, y1);
+        ctx.moveTo(8, y2);
+        ctx.lineTo(w - 8, y2);
+        ctx.stroke();
+        ctx.fillStyle = "#7ea99a";
+        if (w > 150) {
+          ctx.fillText("START", 8, y1 - 6);
+          ctx.fillText("STOP", 8, y2 + 11);
+        }
+        const delay = (sig.jitter / 36) * (w * 0.22);
+        const marks = w < 160 ? 6 : 11;
+        for (let i = 0; i < marks; i++) {
+          const base = 10 + ((i * 47) % 100) / 100 * (w - 28);
+          ctx.strokeStyle = "#f0c86a";
+          ctx.beginPath();
+          ctx.moveTo(base, y1 - 7);
+          ctx.lineTo(base, y1 + 7);
+          ctx.stroke();
+          const stop = Math.min(w - 10, base + delay);
+          ctx.strokeStyle = "#7dffe0";
+          ctx.beginPath();
+          ctx.moveTo(stop, y2 - 7);
+          ctx.lineTo(stop, y2 + 7);
+          ctx.stroke();
+        }
+        const gate = 16 + ((time * 28) % Math.max(20, w - 56));
+        ctx.strokeStyle = "rgba(255, 177, 90, 0.85)";
+        ctx.strokeRect(gate, y1 - 12, 26, y2 - y1 + 24);
+        const lamps = 18;
+        const lw = (w - 16) / lamps;
+        const ly = h - 14;
+        for (let i = 0; i < lamps; i++) {
+          const hit = Math.sin(time * 2.6 + i * 0.55) > 0.15 + sig.shear * 0.7;
+          ctx.fillStyle = hit ? (i % 5 === 0 ? "#f0c86a" : "#7dffe0") : "rgba(125, 255, 224, 0.12)";
+          ctx.fillRect(8 + i * lw, ly, Math.max(1, lw - 2), 7);
+        }
+      }
+
+      function drawMeters(canvas, sig) {
+        const view = fit(canvas);
+        const ctx = view.ctx;
+        const w = view.w;
+        const h = view.h;
+        ctx.clearRect(0, 0, w, h);
+        const faces = [
+          { label: "BRAID", text: Math.round(sig.power) + " MW", v: unit(sig.power, 520, 660), warn: sig.power < 590, danger: "lo" },
+          { label: "CRYO", text: sig.cryo.toFixed(3) + " K", v: unit(sig.cryo, 4.16, 4.23), warn: sig.cryo > 4.205, danger: "hi" },
+          { label: "BPHI", text: sig.bphi.toFixed(3) + " T", v: unit(sig.bphi, 4.75, 4.85), warn: sig.bphi < 4.795, danger: "lo" }
+        ];
+        const a0 = Math.PI * 0.75;
+        const a1 = Math.PI * 2.25;
+        const span = a1 - a0;
+        ctx.font = "10px Consolas, monospace";
+        ctx.fillStyle = "#7ea99a";
+        ctx.fillText("METERS", 4, 12);
+        if (w / faces.length < 68) {
+          faces.forEach(function (face, i) {
+            const rowH = (h - 18) / faces.length;
+            const y = 16 + i * rowH;
+            ctx.font = "10px Consolas, monospace";
+            ctx.fillStyle = face.warn ? "#ffb15a" : "#7ea99a";
+            ctx.textAlign = "left";
+            ctx.fillText(face.label, 6, y + 12);
+            ctx.fillStyle = "#d7efe6";
+            ctx.textAlign = "right";
+            ctx.fillText(face.text, w - 6, y + 12);
+            ctx.textAlign = "left";
+            const barY = y + 16;
+            ctx.fillStyle = "rgba(125, 255, 224, 0.12)";
+            ctx.fillRect(6, barY, w - 12, Math.max(4, Math.min(7, rowH - 20)));
+            ctx.fillStyle = face.warn ? "#ffb15a" : "#7dffe0";
+            ctx.fillRect(6, barY, (w - 12) * face.v, Math.max(4, Math.min(7, rowH - 20)));
+          });
+          return;
+        }
+        faces.forEach(function (face, i) {
+          const cx = (i + 0.5) * (w / faces.length);
+          const R = Math.max(16, Math.min(w / faces.length * 0.36, (h - 28) * 0.46));
+          const cy = Math.min(h * 0.58, 16 + R);
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = "rgba(125, 255, 224, 0.2)";
+          ctx.beginPath();
+          ctx.arc(cx, cy, R, a0, a1);
+          ctx.stroke();
+          ctx.strokeStyle = "rgba(255, 177, 90, 0.75)";
+          ctx.beginPath();
+          if (face.danger === "hi") ctx.arc(cx, cy, R, a0 + span * 0.82, a1);
+          else ctx.arc(cx, cy, R, a0, a0 + span * 0.18);
+          ctx.stroke();
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = "rgba(215, 239, 230, 0.45)";
+          for (let t = 0; t <= 8; t++) {
+            const ang = a0 + span * (t / 8);
+            ctx.beginPath();
+            ctx.moveTo(cx + Math.cos(ang) * R * 0.82, cy + Math.sin(ang) * R * 0.82);
+            ctx.lineTo(cx + Math.cos(ang) * R * 0.98, cy + Math.sin(ang) * R * 0.98);
+            ctx.stroke();
+          }
+          const ang = a0 + span * Math.max(0, Math.min(1, face.v));
+          ctx.strokeStyle = face.warn ? "#ffb15a" : "#f0c86a";
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.moveTo(cx - Math.cos(ang) * R * 0.16, cy - Math.sin(ang) * R * 0.16);
+          ctx.lineTo(cx + Math.cos(ang) * R * 0.86, cy + Math.sin(ang) * R * 0.86);
+          ctx.stroke();
+          ctx.lineWidth = 1;
+          ctx.fillStyle = face.warn ? "#ffb15a" : "#7dffe0";
+          ctx.beginPath();
+          ctx.arc(cx, cy, 2.2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#d7efe6";
+          ctx.font = "10px Consolas, monospace";
+          ctx.textAlign = "center";
+          ctx.fillText(face.text, cx, cy + R * 0.55);
+          ctx.fillStyle = "#7ea99a";
+          ctx.font = "9px Consolas, monospace";
+          ctx.fillText(face.label, cx, Math.min(h - 4, cy + R + 12));
+          ctx.textAlign = "left";
+        });
+      }
+
+      function drawTaps(canvas, time, sig) {
+        const view = fit(canvas);
+        const ctx = view.ctx;
+        const w = view.w;
+        const h = view.h;
+        ctx.clearRect(0, 0, w, h);
+        const n = 16;
+        const railY = 26;
+        ctx.font = "10px Consolas, monospace";
+        ctx.fillStyle = "#7ea99a";
+        ctx.fillText("DELAY", 4, 12);
+        let acc = 0;
+        const packet = (time * 0.16) % 1;
+        for (let i = 0; i < n; i++) {
+          const u = (i + 0.5) / n;
+          const delay = (n - i) * 0.16;
+          const wave = Math.sin((time - delay) * 7.4) * 0.62 + Math.sin((time - delay) * 2.2) * 0.28 + sig.shear * 0.35;
+          const window = 0.28 + 0.72 * Math.exp(-((u - 0.42) * (u - 0.42)) / 0.06);
+          acc += wave * window;
+        }
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#f0c86a";
+        ctx.fillText("SUM " + acc.toFixed(2), w - 4, 12);
+        ctx.textAlign = "left";
+        ctx.strokeStyle = "rgba(125, 255, 224, 0.4)";
+        ctx.beginPath();
+        ctx.moveTo(8, railY);
+        ctx.lineTo(w - 8, railY);
+        ctx.stroke();
+        for (let i = 0; i < n; i++) {
+          const u = (i + 0.5) / n;
+          const x = 8 + u * (w - 16);
+          const near = Math.abs(u - packet) < 1 / n;
+          ctx.fillStyle = near ? "#f0c86a" : "#7dffe0";
+          ctx.fillRect(x - 1.2, railY - 4, near ? 3.4 : 2.2, 8);
+        }
+        const gridTop = railY + 8;
+        const gridBot = h - 3;
+        const rows = Math.max(4, Math.min(14, Math.floor((gridBot - gridTop) / 7)));
+        const cw = (w - 10) / n;
+        const rh = (gridBot - gridTop) / rows;
+        const cursor = Math.floor(packet * n);
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < n; c++) {
+            const lag = (r + 1) * 0.17;
+            const wave = Math.sin((time - c * lag) * 4.2 + r * 0.4) * 0.72 + Math.sin((time - c * 0.31) * 1.7) * 0.28;
+            const v = Math.max(-1, Math.min(1, wave + sig.shear * 0.25));
+            const hot = c === cursor;
+            if (v >= 0) ctx.fillStyle = hot ? "rgba(240, 200, 106, 0.95)" : "rgba(125, 255, 224, " + (0.12 + v * 0.78).toFixed(3) + ")";
+            else ctx.fillStyle = "rgba(255, 138, 176, " + (0.14 + -v * 0.8).toFixed(3) + ")";
+            ctx.fillRect(5 + c * cw, gridTop + r * rh, Math.max(1, cw - 1), Math.max(1, rh - 1));
+          }
+        }
+      }
+
+      function gauss(x, m, s) {
+        const d = (x - m) / s;
+        return Math.exp(-0.5 * d * d);
+      }
+
+      function drawSpec(canvas, time, sig) {
+        const view = fit(canvas);
+        const ctx = view.ctx;
+        const w = view.w;
+        const h = view.h;
+        ctx.clearRect(0, 0, w, h);
+        const n = 72;
+        const bw = (w - 8) / n;
+        ctx.font = "9px Consolas, monospace";
+        ctx.fillStyle = "#7ea99a";
+        ctx.fillText("0.4", 4, 11);
+        ctx.fillText("2.45", w * 0.46, 11);
+        ctx.fillText("GHz", w - 26, 11);
+        for (let i = 0; i < n; i++) {
+          const x = i / (n - 1);
+          let v = 0.05 + 0.025 * Math.abs(Math.sin(i * 12.9 + Math.floor(time * 6) * 3.1));
+          v += gauss(x, 0.18, 0.04) * 0.32;
+          v += gauss(x, 0.46 + 0.012 * Math.sin(time * 0.4), 0.02) * (0.82 + sig.shear * 0.45);
+          v += gauss(x, 0.63, 0.016) * 0.48;
+          v += gauss(x, 0.8, 0.028) * 0.26;
+          v = Math.min(1, v);
+          peak[i] = Math.max(v, peak[i] * 0.992);
+          const bh = v * (h - 18);
+          ctx.fillStyle = "rgba(125, 255, 224, 0.8)";
+          ctx.fillRect(4 + i * bw, h - 6 - bh, Math.max(1, bw - 1), bh);
+          ctx.fillStyle = "rgba(240, 200, 106, 0.95)";
+          ctx.fillRect(4 + i * bw, h - 6 - peak[i] * (h - 18), Math.max(1, bw - 1), 1.4);
+        }
+      }
+
+      function drawPhase(canvas) {
+        const view = fit(canvas);
+        const ctx = view.ctx;
+        const w = view.w;
+        const h = view.h;
+        ctx.clearRect(0, 0, w, h);
+        const cx = w / 2;
+        const cy = h / 2;
+        const s = Math.min(w, h) * 0.36;
+        ctx.strokeStyle = "rgba(125, 255, 224, 0.22)";
+        ctx.strokeRect(cx - s, cy - s, s * 2, s * 2);
+        ctx.beginPath();
+        ctx.moveTo(cx - s, cy);
+        ctx.lineTo(cx + s, cy);
+        ctx.moveTo(cx, cy - s);
+        ctx.lineTo(cx, cy + s);
+        ctx.stroke();
+        for (let k = 0; k < TRAIL; k++) {
+          const p = trail[(trailHead + k) % TRAIL];
+          if (!p) continue;
+          const a = 0.04 + (k / TRAIL) * 0.9;
+          ctx.fillStyle = "rgba(125, 255, 224, " + a.toFixed(3) + ")";
+          ctx.fillRect(cx + p.x * s - 0.8, cy - p.y * s - 0.8, 1.7, 1.7);
+        }
+        const last = trail[(trailHead + TRAIL - 1) % TRAIL];
+        if (last) {
+          ctx.fillStyle = "#f0c86a";
+          ctx.beginPath();
+          ctx.arc(cx + last.x * s, cy - last.y * s, 2.6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = "#7ea99a";
+        ctx.font = "10px Consolas, monospace";
+        ctx.fillText("tau", 6, 12);
+        ctx.fillText("q", w - 16, h - 6);
+      }
+
+      function drawHorizon(canvas, time, sig) {
+        const view = fit(canvas);
+        const ctx = view.ctx;
+        const w = view.w;
+        const h = view.h;
+        ctx.clearRect(0, 0, w, h);
+        const cx = w / 2;
+        const cy = h / 2;
+        const R = Math.min(w, h) * 0.4;
+        const sweep = time * 0.65;
+        ctx.strokeStyle = "rgba(125, 255, 224, 0.28)";
+        for (let i = 1; i <= 4; i++) {
+          ctx.beginPath();
+          ctx.arc(cx, cy, (R * i) / 4, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.moveTo(cx - R, cy);
+        ctx.lineTo(cx + R, cy);
+        ctx.moveTo(cx, cy - R);
+        ctx.lineTo(cx, cy + R);
+        ctx.stroke();
+        if (ctx.createConicalGradient) {
+          const g = ctx.createConicalGradient(cx, cy, sweep);
+          g.addColorStop(0, "rgba(125, 255, 224, 0)");
+          g.addColorStop(0.05, "rgba(125, 255, 224, 0.28)");
+          g.addColorStop(0.11, "rgba(125, 255, 224, 0)");
+          g.addColorStop(1, "rgba(125, 255, 224, 0)");
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(cx, cy, R, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        contacts.forEach(function (c) {
+          const ang = c.a * Math.PI / 180;
+          const x = cx + Math.cos(ang) * R * c.r;
+          const y = cy + Math.sin(ang) * R * c.r;
+          let da = Math.atan2(Math.sin(ang - sweep), Math.cos(ang - sweep));
+          if (da < 0) da += Math.PI * 2;
+          const fresh = Math.max(0, 1 - da / 2.4);
+          ctx.fillStyle = "rgba(240, 200, 106, " + (0.28 + fresh * 0.72).toFixed(3) + ")";
+          ctx.beginPath();
+          ctx.arc(x, y, 1.8 + fresh * 1.6, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.strokeStyle = "#7dffe0";
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(sweep) * R, cy + Math.sin(sweep) * R);
+        ctx.stroke();
+        ctx.fillStyle = "#04110e";
+        ctx.beginPath();
+        ctx.arc(cx, cy, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#d7efe6";
+        ctx.font = "9px Consolas, monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(String(Math.round(sig.range)), cx, cy + 3);
+        ctx.textAlign = "left";
+      }
+
+      function drawGauge(canvas, lock) {
+        const view = fit(canvas);
+        const ctx = view.ctx;
+        const w = view.w;
+        const h = view.h;
+        ctx.clearRect(0, 0, w, h);
+        const cx = w / 2;
+        const cy = h * 0.58;
+        const R = Math.min(w, h) * 0.38;
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "rgba(125, 255, 224, 0.2)";
+        ctx.beginPath();
+        ctx.arc(cx, cy, R, Math.PI * 0.75, Math.PI * 2.25);
+        ctx.stroke();
+        ctx.strokeStyle = lock < 0.95 ? "#ffb15a" : "#7dffe0";
+        ctx.beginPath();
+        ctx.arc(cx, cy, R, Math.PI * 0.75, Math.PI * 0.75 + Math.PI * 1.5 * lock);
+        ctx.stroke();
+        ctx.lineWidth = 1;
+        ctx.fillStyle = "#d7efe6";
+        ctx.font = "10px Consolas, monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(lock.toFixed(2), cx, cy + 4);
+        ctx.textAlign = "left";
+      }
+
+      function paintDom(time, sig, focus, rate) {
+        const now = new Date();
+        document.getElementById("utc").textContent = utcStamp(now);
+        document.getElementById("epoch").textContent = "E-" + (20441.882 + time / 86.4).toFixed(3);
+        document.getElementById("sol").textContent = solText(now);
+        for (let i = 0; i < CHANNELS.length; i++) {
+          const ch = CHANNELS[i];
+          const row = channelRows[i];
+          row.classList.toggle("is-watch", ch.warn(sig));
+          row.querySelector(".ch-val").textContent = ch.text(sig);
+          row.querySelector(".bar > span").style.width = (ch.bar(sig) * 100).toFixed(1) + "%";
+        }
+        const pr = probeRead(focus, time, sig);
+        document.getElementById("focus-id").textContent = pr.id;
+        document.getElementById("f-shell").textContent = pr.shell;
+        document.getElementById("f-az").textContent = pr.az.toFixed(1) + "°";
+        document.getElementById("f-ph").textContent = (pr.phase >= 0 ? "+" : "") + pr.phase.toFixed(3);
+        document.getElementById("f-t").textContent = pr.temp.toFixed(3) + " K";
+        document.getElementById("f-r").textContent = Math.round(pr.range) + " km";
+        document.getElementById("f-lock").textContent = pr.lock.toFixed(3);
+        document.getElementById("focus-meta").textContent = pinned >= 0 ? "PIN" : "AUTO";
+        const hot = sig.shear > 0.08;
+        const volMeta = document.getElementById("vol-meta");
+        const plantMeta = document.getElementById("plant-meta");
+        volMeta.textContent = hot ? "SHEAR" : "QUIET";
+        volMeta.classList.toggle("is-watch", hot);
+        plantMeta.textContent = hot ? "SHEAR" : "NOMINAL";
+        plantMeta.classList.toggle("is-watch", hot);
+        document.getElementById("carrier-meta").textContent = sig.carrier.toFixed(6) + " GHz";
+        document.getElementById("horizon-meta").textContent = Math.round(sig.range) + " km";
+        const open = eyeOpen(sig);
+        const benchMeta = document.getElementById("bench-meta");
+        benchMeta.textContent = "EYE " + Math.round(open * 100) + "%";
+        benchMeta.classList.toggle("is-watch", open < 0.55);
+        document.getElementById("ticker").textContent =
+          "TAU " + sig.tau.toFixed(3) +
+          "    Q " + sig.q.toFixed(3) +
+          "    " + Math.round(sig.power) + " MW" +
+          "    " + sig.cryo.toFixed(3) + " K" +
+          "    JIT " + sig.jitter.toFixed(1) + " ns" +
+          "    LOCK " + Math.round(sig.lock * probes.length) + "/" + probes.length;
+        const cal = Math.floor(time / 6) % PLANT.length;
+        for (let i = 0; i < plantCells.length; i++) {
+          const watch = sig.shear > 0.2 && WATCH.has(PLANT[i]);
+          const isCal = !watch && i === cal;
+          plantCells[i].classList.toggle("is-watch", watch);
+          plantCells[i].classList.toggle("is-cal", isCal);
+          plantCells[i].querySelector("b").textContent = watch ? "WATCH" : isCal ? "CAL" : "NOM";
+        }
+        const wakeWord = wakeLock ? "HELD" : wantHold ? "N/A" : "OPEN";
+        bus.textContent =
+          "TAU " + sig.tau.toFixed(3) + " ms" +
+          "   BPHI " + sig.bphi.toFixed(3) + " T" +
+          "   NE " + sci(sig.ne) +
+          "   Q " + sig.q.toFixed(3) +
+          "   P " + Math.round(sig.power) + " MW" +
+          "   T " + sig.cryo.toFixed(3) + " K" +
+          "   NU " + sig.carrier.toFixed(6) + " GHz" +
+          "   JIT " + sig.jitter.toFixed(1) + " ns" +
+          "   BER " + sci(sig.ber) +
+          "   EL " + (sig.elev >= 0 ? "+" : "") + sig.elev.toFixed(1) +
+          "   LOCK " + Math.round(sig.lock * probes.length) + "/" + probes.length +
+          "   FPS " + rate.toFixed(0) +
+          "   WAKE " + wakeWord +
+          "   DESK 04";
+      }
+
+      function stepShear(dt, time) {
+        if (mode === "idle") {
+          if (time >= nextShear) {
+            mode = "rise";
+            shearT = 0;
+            pushLog("LATTICE", "shear, q off null", "watch");
+          }
+          return;
+        }
+        if (mode === "rise") {
+          shearT += dt;
+          shear = Math.min(1, shearT / 0.45);
+          if (shear >= 1) {
+            mode = "trim";
+            shearT = 0;
+            pushLog("TRIM", "servos pulling q", "watch");
+          }
+          return;
+        }
+        shearT += dt;
+        shear = Math.exp(-shearT / 3.1);
+        if (shear < 0.035) {
+          shear = 0;
+          mode = "idle";
+          nextShear = time + 22 + Math.random() * 16;
+          pushLog("LATTICE", "q restored", "");
+        }
+      }
+
+      function chatter(sig) {
+        const rows = [
+          ["CRYO-A", sig.cryo.toFixed(3) + " K"],
+          ["CARRIER", sig.carrier.toFixed(6)],
+          ["ARRAY", "nominal"],
+          ["TIME", "tau " + sig.tau.toFixed(3)],
+          ["HORIZON", "C" + pad(Math.floor(t * 2.2) % 26)],
+          ["LINK", sci(sig.ber)],
+          ["BRAID", Math.round(sig.power) + " MW"],
+          ["MAG-2", sig.bphi.toFixed(3) + " T"],
+          ["VOLUME", "phase walk"]
+        ];
+        return rows[Math.floor(Math.random() * rows.length)];
+      }
+
+      let wantHold = false;
+      let wakeLock = null;
+      let wakeGen = 0;
+      let wakeNote = "";
+      let holdBusy = false;
+
+      function isFs() {
+        return !!(document.fullscreenElement || document.webkitFullscreenElement);
+      }
+
+      function paintHold() {
+        const fs = isFs();
+        const wake = !!wakeLock;
+        holdBtn.setAttribute("aria-pressed", wantHold ? "true" : "false");
+        holdBtn.classList.toggle("is-partial", wantHold && (!fs || !wake));
+        const name = document.getElementById("hold-name");
+        const sub = document.getElementById("hold-sub");
+        if (!wantHold) {
+          name.textContent = "HOLD";
+          sub.textContent = "FS + WAKE";
+          holdBtn.setAttribute("aria-label", "Fill the screen and keep the PC awake");
+        } else if (fs && wake) {
+          name.textContent = "LOCKED";
+          sub.textContent = "WAKE HELD";
+          holdBtn.setAttribute("aria-label", "Release the frame and let the PC sleep");
+        } else if (fs && !wake) {
+          name.textContent = "FRAME";
+          sub.textContent = wakeNote === "missing" ? "NO WAKE API" : "WAKE N/A";
+          holdBtn.setAttribute("aria-label", "Leave full screen. Wake lock is not held");
+        } else if (!fs && wake) {
+          name.textContent = "AWAKE";
+          sub.textContent = "NO FRAME";
+          holdBtn.setAttribute("aria-label", "Release the wake lock. Full screen was declined");
+        } else {
+          name.textContent = "FAULT";
+          sub.textContent = "RETRY";
+          holdBtn.setAttribute("aria-label", "Frame lock failed. Activate to try again");
+        }
+        document.getElementById("lamp-fs").classList.toggle("is-on", fs);
+        const wakeLamp = document.getElementById("lamp-wake");
+        wakeLamp.classList.toggle("is-on", wake);
+        wakeLamp.classList.toggle("is-warn", wantHold && !wake);
+      }
+
+      function announce(text) {
+        const el = document.getElementById("hold-live");
+        el.textContent = "";
+        window.setTimeout(function () { el.textContent = text; }, 30);
+      }
+
+      async function acquireWake() {
+        if (!wantHold) return;
+        if (!("wakeLock" in navigator)) {
+          wakeNote = "missing";
+          paintHold();
+          return;
+        }
+        const gen = ++wakeGen;
+        try {
+          const lock = await navigator.wakeLock.request("screen");
+          if (gen !== wakeGen || !wantHold) {
+            try { await lock.release(); } catch (e) { /* already dropping */ }
+            return;
+          }
+          wakeLock = lock;
+          wakeNote = "";
+          lock.addEventListener("release", function () {
+            if (wakeLock === lock) wakeLock = null;
+            if (wantHold && document.visibilityState === "visible") acquireWake();
+            else paintHold();
+          });
+        } catch (e) {
+          if (gen === wakeGen) {
+            wakeNote = "denied";
+            wakeLock = null;
+          }
+        }
+        paintHold();
+      }
+
+      async function releaseWake() {
+        wakeGen++;
+        const lock = wakeLock;
+        wakeLock = null;
+        if (lock) {
+          try { await lock.release(); } catch (e) { /* already released */ }
+        }
+      }
+
+      async function setHold(on) {
+        wantHold = on;
+        if (on) {
+          const el = document.documentElement;
+          const req = el.requestFullscreen || el.webkitRequestFullscreen;
+          if (req) {
+            try { await req.call(el); } catch (e) { /* stay windowed */ }
+          }
+          await acquireWake();
+          paintHold();
+          if (isFs() && wakeLock) {
+            pushLog("FRAME", "wake held", "watch");
+            announce("Frame locked. The PC will stay awake.");
+          } else if (isFs()) {
+            pushLog("FRAME", "wake open", "watch");
+            announce("Frame locked. This browser did not hold the wake lock.");
+          } else if (wakeLock) {
+            pushLog("FRAME", "no frame", "watch");
+            announce("The PC will stay awake. Full screen was declined.");
+          } else {
+            pushLog("FRAME", "lock failed", "watch");
+            announce("The frame did not lock.");
+          }
+        } else {
+          await releaseWake();
+          const exit = document.exitFullscreen || document.webkitExitFullscreen;
+          if (isFs() && exit) {
+            try { await exit.call(document); } catch (e) { /* already out */ }
+          }
+          paintHold();
+          pushLog("FRAME", "wake open", "");
+          announce("Frame released. The PC can sleep.");
+        }
+      }
+
+      function onFsChange() {
+        if (!isFs() && wantHold) {
+          wantHold = false;
+          releaseWake();
+          paintHold();
+          pushLog("FRAME", "wake open", "");
+          announce("Frame released. The PC can sleep.");
+        } else {
+          paintHold();
+        }
+      }
+
+      holdBtn.addEventListener("click", function () {
+        if (holdBusy) return;
+        holdBusy = true;
+        setHold(!wantHold).then(function () { holdBusy = false; }, function () { holdBusy = false; });
+      });
+      document.addEventListener("fullscreenchange", onFsChange);
+      document.addEventListener("webkitfullscreenchange", onFsChange);
+      document.addEventListener("visibilitychange", function () {
+        if (wantHold && document.visibilityState === "visible") acquireWake();
+      });
+
+      volume.addEventListener("pointermove", function (ev) {
+        const rect = volume.getBoundingClientRect();
+        const x = ev.clientX - rect.left;
+        const y = ev.clientY - rect.top;
+        let best = -1;
+        let bestD = 18;
+        for (let i = 0; i < screen.length; i++) {
+          const p = screen[i];
+          if (!p || p.z < -0.05) continue;
+          const d = Math.hypot(p.x - x, p.y - y);
+          if (d < bestD) { bestD = d; best = i; }
+        }
+        pinned = best;
+      });
+      volume.addEventListener("pointerleave", function () { pinned = -1; });
+
+      window.addEventListener("error", function (ev) {
+        bus.textContent = "FAULT  " + (ev.message || "script");
+      });
+
+      for (let k = SCOPE_N; k > 0; k--) {
+        const tt = -k / 60;
+        const sig0 = signals(tt, 0);
+        pushScope(sig0);
+        pushTrail(tt, sig0);
+      }
+
+      pushLog("DESK", "zeta online", "");
+      pushLog("VOLUME", "shells I-III", "");
+      pushLog("CARRIER", "2.447182 GHz", "");
+      pushLog("CRYO-A", "4.186 K hold", "");
+      pushLog("HORIZON", "sweep armed", "");
+      pushLog("FRAME", "wake open", "");
+      paintHold();
+      paintDom(0, signals(0, 0), 0, 60);
+
+      function frame(now) {
+        requestAnimationFrame(frame);
+        try {
+          if (document.hidden) {
+            last = 0;
+            return;
+          }
+          const dtRaw = last ? Math.min(0.05, (now - last) / 1000) : 0.016;
+          last = now;
+          const dt = reduce ? dtRaw * 0.3 : dtRaw;
+          t += dt;
+          stepShear(dt, t);
+          const sig = signals(t, shear);
+          if (mode === "idle" && t >= nextChat) {
+            nextChat = t + 1.4 + Math.random() * 1.8;
+            const line = chatter(sig);
+            pushLog(line[0], line[1], "");
+          }
+          sampleAcc += dt;
+          let steps = 0;
+          while (sampleAcc >= 1 / 60 && steps < 3) {
+            sampleAcc -= 1 / 60;
+            pushScope(sig);
+            pushTrail(t, sig);
+            steps++;
+          }
+          const focus = pinned >= 0 ? pinned : Math.floor(t / 4.8) % probes.length;
+          drawVolume(volume, t, sig, focus);
+          drawScope(scope, sig);
+          drawEye(eye, t, sig);
+          drawPha(pha, t, sig);
+          drawVernier(vernier, t, sig);
+          drawMeters(meters, sig);
+          drawTaps(taps, t, sig);
+          drawSpec(spec, t, sig);
+          drawPhase(phase);
+          drawHorizon(horizon, t, sig);
+          const pr = probeRead(focus, t, sig);
+          drawGauge(gauge, pr.lock);
+          domAcc += dt;
+          fpsAcc += dtRaw;
+          fpsFrames++;
+          if (fpsAcc >= 0.5) {
+            fps = fpsFrames / fpsAcc;
+            fpsFrames = 0;
+            fpsAcc = 0;
+          }
+          if (domAcc >= 0.12) {
+            domAcc = 0;
+            paintDom(t, sig, focus, fps);
+          }
+        } catch (err) {
+          bus.textContent = "FAULT  " + (err && err.message ? err.message : "frame");
+        }
+      }
+
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+  <meta name="theme-color" content="#070b18">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="description" content="A colorful marathon Tetris you can play on a PC or a phone. Hold, hard drop, ghost piece, and a next queue.">
+  <title>TETRIS</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="../favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="shortcut icon" href="../favicon.ico">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="brand">
+        <h1>TETRIS</h1>
+        <p class="tag">Marathon</p>
+      </div>
+      <div class="top-actions">
+        <button id="pauseBtn" type="button" disabled>Pause</button>
+        <button id="muteBtn" type="button" aria-pressed="false">Sound</button>
+      </div>
+    </header>
+
+    <section class="meters" aria-label="Score">
+      <div class="meter">
+        <span>Score</span>
+        <strong id="score">0</strong>
+      </div>
+      <div class="meter">
+        <span>Lines</span>
+        <strong id="lines">0</strong>
+      </div>
+      <div class="meter">
+        <span>Level</span>
+        <strong id="level">1</strong>
+        <i class="track"><b id="bar"></b></i>
+      </div>
+      <div class="meter">
+        <span>Best</span>
+        <strong id="best">0</strong>
+      </div>
+    </section>
+
+    <div class="stage">
+      <section class="panel">
+        <h2>Hold</h2>
+        <canvas id="hold" width="96" height="80" aria-hidden="true"></canvas>
+      </section>
+
+      <div class="well-wrap" id="wellWrap">
+        <canvas id="well" width="200" height="400" aria-label="Tetris playfield"></canvas>
+        <p id="banner" class="banner" aria-live="polite"></p>
+        <div id="overlay" class="overlay is-open">
+          <div class="card">
+            <h2 id="ovTitle">TETRIS</h2>
+            <p id="ovText"></p>
+            <p id="ovStats" class="ov-stats" hidden></p>
+            <div class="ov-actions">
+              <button id="resumeBtn" class="primary" type="button" hidden>Resume</button>
+              <button id="playBtn" class="primary" type="button">Play</button>
+              <button id="againBtn" class="primary" type="button" hidden>Play again</button>
+            </div>
+            <p id="how" class="how">PC: arrows move, ↑ or X rotates, Z the other way, Space drops, C holds.
+Phone: the buttons, or gestures on the well. Tap to rotate, swipe down to drop, swipe up to hold.</p>
+            <p class="legal">Fan-made game. Tetris is a trademark of The Tetris Company. Not affiliated with The Tetris Company or Nintendo.</p>
+          </div>
+        </div>
+      </div>
+
+      <section class="panel">
+        <h2>Next</h2>
+        <canvas id="next" width="96" height="280" aria-hidden="true"></canvas>
+      </section>
+    </div>
+
+    <div class="controls">
+      <button type="button" data-hold="left" aria-label="Move left">◀</button>
+      <button type="button" data-hold="right" aria-label="Move right">▶</button>
+      <button type="button" data-tap="rotate" aria-label="Rotate clockwise">⟳</button>
+      <button type="button" data-hold="soft" aria-label="Soft drop">▼</button>
+      <button type="button" data-tap="hard" aria-label="Hard drop">Drop</button>
+      <button type="button" data-tap="hold" aria-label="Hold piece">Hold</button>
+    </div>
+
+    <p class="hint">Arrows move · ↑ or X rotate · Z the other way · ↓ soft drop · Space hard drop · C hold · P pause · M sound</p>
+  </div>
+
+  <script src="js/engine.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

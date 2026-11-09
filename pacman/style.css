@@ -1,0 +1,342 @@
+/* ─── Pac-Man 1980 arcade recreation ─── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #000;
+  --maze-blue: #2121de;
+  --pac-yellow: #ffff00;
+  --dot-cream: #ffb897;
+  --ui-white: #fff;
+  --ui-red: #ff0000;
+  --ui-muted: #888;
+  --panel: #0a0a12;
+  --font: "Press Start 2P", monospace;
+}
+
+html, body {
+  height: 100%;
+  background: radial-gradient(ellipse at 50% 20%, #12122a 0%, #000 70%);
+  color: var(--ui-white);
+  font-family: var(--font);
+  -webkit-font-smoothing: none;
+  image-rendering: pixelated;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 10px 10px 24px;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+}
+
+#app {
+  width: min(100%, 560px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ─── HUD ─── */
+.hud {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 4px 4px 0;
+  user-select: none;
+}
+
+.hud.bottom {
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  min-height: 36px;
+  padding: 6px 4px 0;
+}
+
+.hud-block .label {
+  font-size: 10px;
+  color: var(--ui-red);
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.hud-block.center {
+  text-align: center;
+}
+
+.hud-block.right {
+  text-align: right;
+}
+
+.hud-block .value {
+  font-size: 14px;
+  color: var(--ui-white);
+  min-height: 16px;
+}
+
+/* Lives (small Pac-Men) */
+.lives {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 24px;
+}
+
+.lives .life-icon {
+  width: 20px;
+  height: 20px;
+  background: var(--pac-yellow);
+  border-radius: 50%;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 55%, 45% 50%, 0 45%);
+}
+
+.fruit-tray {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  flex-wrap: wrap;
+  min-height: 24px;
+}
+
+.fruit-tray .fruit-icon {
+  width: 22px;
+  height: 22px;
+  image-rendering: pixelated;
+}
+
+/* ─── Game canvas ─── */
+#game-wrap {
+  position: relative;
+  width: min(100%, 520px, calc((100dvh - 148px) * 448 / 496));
+  margin-inline: auto;
+  background: #000;
+  border: 3px solid var(--maze-blue);
+  box-shadow:
+    0 0 0 2px #000,
+    0 0 24px rgba(33, 33, 222, 0.45),
+    inset 0 0 40px rgba(0, 0, 40, 0.5);
+  line-height: 0;
+  touch-action: none;
+}
+
+#game {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: #000;
+  touch-action: none;
+}
+
+.status,
+.hint {
+  font-size: 7px;
+  line-height: 1.7;
+  text-align: center;
+  padding: 0 8px;
+}
+
+.status {
+  color: #dedeff;
+  min-height: 1.7em;
+}
+
+.status:empty {
+  display: none;
+}
+
+.status.gameover {
+  color: var(--ui-red);
+}
+
+.status.paused {
+  color: #ffb8ff;
+}
+
+.hint {
+  color: var(--ui-muted);
+}
+
+#touch-controls {
+  display: none;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 2px 4px 0;
+  user-select: none;
+  touch-action: none;
+}
+
+.dpad {
+  display: grid;
+  grid-template-columns: 54px 54px 54px;
+  grid-template-rows: 46px 46px 46px;
+  gap: 4px;
+}
+
+.dpad button,
+.touch-actions button {
+  font-family: inherit;
+  color: var(--pac-yellow);
+  background: #070712;
+  border: 2px solid var(--maze-blue);
+  border-radius: 8px;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+
+.dpad button {
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+}
+
+.dpad button[data-dir="up"] { grid-column: 2; grid-row: 1; }
+.dpad button[data-dir="left"] { grid-column: 1; grid-row: 2; }
+.dpad button[data-dir="down"] { grid-column: 2; grid-row: 3; }
+.dpad button[data-dir="right"] { grid-column: 3; grid-row: 2; }
+
+.dpad button[data-dir="up"]::before { content: "▲"; }
+.dpad button[data-dir="down"]::before { content: "▼"; }
+.dpad button[data-dir="left"]::before { content: "◀"; }
+.dpad button[data-dir="right"]::before { content: "▶"; }
+
+.touch-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.touch-actions button {
+  font-size: 8px;
+  color: var(--ui-white);
+  padding: 14px 8px;
+}
+
+.dpad button:active,
+.touch-actions button:active {
+  background: #2121de;
+  color: #fff;
+}
+
+/* ─── Info panel ─── */
+.info {
+  margin-top: 12px;
+  padding: 14px 10px;
+  background: var(--panel);
+  border: 1px solid #1a1a3a;
+  border-radius: 4px;
+}
+
+.info h1 {
+  font-size: 12px;
+  color: var(--pac-yellow);
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+
+.info .year {
+  color: var(--ui-muted);
+  font-size: 10px;
+}
+
+.info .credits {
+  font-size: 7px;
+  line-height: 1.8;
+  color: #aaa;
+  margin-bottom: 14px;
+}
+
+.legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  font-size: 7px;
+  color: #ccc;
+  line-height: 1.4;
+}
+
+.legend > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dot-swatch {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dot-cream);
+  flex-shrink: 0;
+}
+
+.energizer-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--dot-cream);
+  flex-shrink: 0;
+  box-shadow: 0 0 6px var(--dot-cream);
+}
+
+.ghost-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px 4px 2px 2px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.ghost-swatch::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 3px;
+  width: 3px;
+  height: 3px;
+  background: #fff;
+  box-shadow: 6px 0 0 #fff;
+  border-radius: 50%;
+}
+
+.ghost-swatch.b { background: #ff0000; }
+.ghost-swatch.p { background: #ffb8ff; }
+.ghost-swatch.i { background: #00ffff; }
+.ghost-swatch.c { background: #ffb852; }
+
+@media (pointer: coarse), (max-width: 760px) {
+  #touch-controls {
+    display: grid;
+  }
+  #game-wrap {
+    width: min(100%, calc((100dvh - 270px) * 448 / 496));
+  }
+  .info,
+  .hint {
+    display: none;
+  }
+  .legend {
+    grid-template-columns: 1fr;
+  }
+  .hud-block .label {
+    font-size: 8px;
+  }
+  .hud-block .value {
+    font-size: 12px;
+  }
+}

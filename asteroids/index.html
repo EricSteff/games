@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="description" content="Asteroids — 1979 Atari vector arcade recreation." />
+  <title>ASTEROIDS — 1979 Atari Arcade</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="../favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="shortcut icon" href="../favicon.ico" />
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="cabinet">
+    <header class="marquee">
+      <h1>ASTEROIDS</h1>
+      <p class="subtitle">Atari · 1979 · Vector Arcade Recreation</p>
+    </header>
+
+    <div id="screen-bezel">
+      <canvas id="game" width="1024" height="768" aria-label="Asteroids game screen"></canvas>
+      <div id="overlay" class="hidden">
+        <div id="overlay-msg"></div>
+      </div>
+    </div>
+
+    <div class="controls-panel">
+      <div class="ctrl-group">
+        <kbd>←</kbd><kbd>→</kbd> / <kbd>A</kbd><kbd>D</kbd>
+        <span>Rotate</span>
+      </div>
+      <div class="ctrl-group">
+        <kbd>↑</kbd> / <kbd>W</kbd>
+        <span>Thrust</span>
+      </div>
+      <div class="ctrl-group">
+        <kbd>Space</kbd>
+        <span>Fire</span>
+      </div>
+      <div class="ctrl-group">
+        <kbd>Shift</kbd> / <kbd>H</kbd>
+        <span>Hyperspace</span>
+      </div>
+      <div class="ctrl-group">
+        <kbd>1</kbd> / <kbd>Enter</kbd>
+        <span>Start / Coin</span>
+      </div>
+      <div class="ctrl-group">
+        <kbd>M</kbd>
+        <span>Mute</span>
+      </div>
+    </div>
+
+    <footer class="credits">
+      Faithful recreation of Atari Asteroids (1979) by Ed Logg &amp; Lyle Rains.
+      Vector graphics · inertia physics · wrap-around · saucers · heartbeat.
+      No commercial affiliation with Atari.
+    </footer>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

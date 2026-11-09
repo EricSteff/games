@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="description" content="Play the original Doom shareware in your browser — WebAssembly, no install." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <title>DOOM — Play Online</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="../favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="shortcut icon" href="../favicon.ico" />
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="top-bar">
+      <h1 id="doom-title">DOOM</h1>
+      <p class="tagline">Knee-Deep in the Dead · shareware</p>
+    </header>
+
+    <section id="loader" class="panel">
+      <div class="panel-inner loader-center">
+        <h2>Starting DOOM…</h2>
+        <p class="loader-sub">Loading the shareware episode</p>
+        <div class="spinner" aria-hidden="true"></div>
+        <p id="load-status" class="status" aria-live="polite">Loading…</p>
+      </div>
+    </section>
+
+    <main id="game-wrap" class="hidden">
+      <div id="toolbar">
+        <button type="button" id="full-btn">Full screen</button>
+        <button type="button" id="controls-toggle" aria-expanded="false" aria-controls="controls-panel">Controls</button>
+        <label class="check" for="always-run" title="Hold Shift to walk">
+          <input id="always-run" type="checkbox" checked />
+          Run
+        </label>
+        <label class="sens-label" for="mouse-sens">
+          Mouse
+          <span id="mouse-sens-value">100%</span>
+          <input id="mouse-sens" type="range" min="25" max="250" step="5" value="100"
+                 aria-valuemin="25" aria-valuemax="250" aria-valuenow="100" />
+        </label>
+      </div>
+
+      <div id="stage">
+        <div id="frame">
+          <canvas id="doom-canvas" width="320" height="200" tabindex="0" aria-label="DOOM game view"></canvas>
+        </div>
+        <div id="touch-controls" aria-hidden="true">
+          <div id="move-stick" class="stick-zone">
+            <div class="stick-base" aria-hidden="true"><div class="stick-knob"></div></div>
+          </div>
+          <div class="touch-actions">
+            <button type="button" data-key="ControlLeft" class="tbtn fire">FIRE</button>
+            <button type="button" data-key="Space" class="tbtn use">USE</button>
+          </div>
+          <div class="touch-bar">
+            <button type="button" data-key="Digit1" class="tbtn num">1</button>
+            <button type="button" data-key="Digit2" class="tbtn num">2</button>
+            <button type="button" data-key="Digit3" class="tbtn num">3</button>
+            <button type="button" data-key="Digit4" class="tbtn num">4</button>
+            <button type="button" data-key="Tab" class="tbtn">MAP</button>
+            <button type="button" data-key="Escape" class="tbtn">MENU</button>
+            <button type="button" data-key="Enter" class="tbtn">OK</button>
+          </div>
+        </div>
+      </div>
+
+      <p id="hud-hint">Click the picture for the mouse and for sound · Esc opens the menu</p>
+
+      <aside id="controls-panel" hidden aria-label="Controls and settings">
+        <h2 class="legend-title">Keyboard, mouse, pad</h2>
+        <table class="legend-table">
+          <tbody>
+            <tr><td class="keys"><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>Move, and sidestep</td></tr>
+            <tr><td class="keys"><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></td><td>Move forward / back, turn</td></tr>
+            <tr><td class="keys"><kbd>E</kbd> <kbd>Space</kbd></td><td>Use / open doors and switches</td></tr>
+            <tr><td class="keys"><kbd>Ctrl</kbd> or left click</td><td>Fire</td></tr>
+            <tr><td class="keys" id="shift-keys"><kbd>Shift</kbd></td><td id="shift-help">Walk (Run is on)</td></tr>
+            <tr><td class="keys"><kbd>,</kbd> <kbd>.</kbd> <kbd>Alt</kbd></td><td>Sidestep · Alt with the arrows sidesteps</td></tr>
+            <tr><td class="keys"><kbd>1</kbd> – <kbd>7</kbd> <kbd>[</kbd> <kbd>]</kbd></td><td>Weapons · mouse wheel changes weapon</td></tr>
+            <tr><td class="keys">Mouse</td><td>Turn. Up and down does not walk you</td></tr>
+            <tr><td class="keys">Right click</td><td>Sidestep while you turn the mouse</td></tr>
+            <tr><td class="keys"><kbd>Tab</kbd></td><td>Automap</td></tr>
+            <tr><td class="keys"><kbd>Esc</kbd> <kbd>Enter</kbd></td><td>Menu · confirm</td></tr>
+            <tr><td class="keys">Gamepad</td><td>Left stick moves, right stick turns, right trigger fires, A uses, shoulders change weapon, Start or B is the menu</td></tr>
+            <tr><td class="keys">Phone</td><td>The stick moves. Drag the picture to turn. Fire and Use sit with the stick</td></tr>
+          </tbody>
+        </table>
+        <p id="save-note" class="save-note">
+          <strong>Save games</strong> stay in <em>this browser only</em> (IndexedDB on this website).
+          They are not uploaded. Another browser or device will not see them.
+          In the game: <kbd>Esc</kbd> → Save Game / Load Game.
+        </p>
+      </aside>
+    </main>
+
+    <footer id="foot">
+      <span>DOOM shareware · Engine based on id Software DOOM / doomgeneric · GPLv2+</span>
+    </footer>
+  </div>
+
+  <script src="music.js"></script>
+  <script src="app.js"></script>
+  <script async src="doom.js"></script>
+</body>
+</html>

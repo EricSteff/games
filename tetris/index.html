@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="description" content="Playable recreation of Nintendo Game Boy Tetris (1989) — A-Type marathon, Nintendo scoring, left-handed rotation, and Korobeiniki music." />
+  <meta name="theme-color" content="#8B956D" />
+  <title>TETRIS — Game Boy (1989)</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%239BBC0F' width='100' height='100' rx='12'/><text y='.72em' x='50%' text-anchor='middle' font-size='70' font-family='monospace' fill='%230F380F'>T</text></svg>" />
+</head>
+<body>
+  <div class="page">
+    <div class="device" id="device">
+      <div class="device-brand">
+        <span class="brand-dot"></span>
+        <span class="brand-text">GAME BOY</span>
+      </div>
+
+      <div class="bezel">
+        <div class="lcd" id="lcd">
+          <!-- TITLE / MENU -->
+          <section id="screen-menu" class="screen active">
+            <div class="menu-title">TETRIS</div>
+            <div class="menu-sub">© 1989</div>
+            <div class="menu-block">
+              <p class="menu-label">A-TYPE</p>
+              <p class="menu-row">LEVEL <span id="menu-level">0</span></p>
+              <p class="menu-hint">← → change · START play</p>
+            </div>
+            <div class="menu-block">
+              <p class="menu-label">MUSIC</p>
+              <p class="menu-row" id="menu-music">A-TYPE</p>
+              <p class="menu-hint">↑ ↓ change</p>
+            </div>
+            <p class="menu-foot">Nintendo Game Boy style · fan recreation</p>
+          </section>
+
+          <!-- PLAY -->
+          <section id="screen-play" class="screen" hidden>
+            <div class="play-layout">
+              <div class="field-col">
+                <canvas id="board" width="100" height="180" aria-label="Playfield"></canvas>
+              </div>
+              <aside class="stats-col">
+                <div class="stat-box">
+                  <div class="stat-h">SCORE</div>
+                  <div class="stat-v" id="hud-score">0</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-h">LEVEL</div>
+                  <div class="stat-v" id="hud-level">0</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-h">LINES</div>
+                  <div class="stat-v" id="hud-lines">0</div>
+                </div>
+                <div class="stat-box next-box">
+                  <div class="stat-h">NEXT</div>
+                  <canvas id="next" width="48" height="40" aria-label="Next piece"></canvas>
+                </div>
+              </aside>
+            </div>
+            <div id="pause-overlay" class="overlay" hidden>PAUSE</div>
+          </section>
+
+          <!-- GAME OVER -->
+          <section id="screen-over" class="screen" hidden>
+            <div class="menu-title">GAME<br />OVER</div>
+            <div class="menu-block">
+              <p class="menu-row">SCORE <span id="over-score">0</span></p>
+              <p class="menu-row">LEVEL <span id="over-level">0</span></p>
+              <p class="menu-row">LINES <span id="over-lines">0</span></p>
+            </div>
+            <p class="menu-hint">START — again · SELECT — menu</p>
+          </section>
+        </div>
+        <div class="lcd-power">BATTERY</div>
+      </div>
+
+      <div class="controls-area">
+        <div class="dpad" aria-hidden="true">
+          <button type="button" class="pad-btn pad-up" data-btn="up" aria-label="Up"></button>
+          <button type="button" class="pad-btn pad-left" data-btn="left" aria-label="Left"></button>
+          <button type="button" class="pad-btn pad-right" data-btn="right" aria-label="Right"></button>
+          <button type="button" class="pad-btn pad-down" data-btn="down" aria-label="Down"></button>
+          <div class="pad-center"></div>
+        </div>
+        <div class="face-btns">
+          <button type="button" class="face-btn btn-b" data-btn="b" aria-label="B">B</button>
+          <button type="button" class="face-btn btn-a" data-btn="a" aria-label="A">A</button>
+        </div>
+      </div>
+
+      <div class="start-select">
+        <button type="button" class="ss-btn" data-btn="select" aria-label="Select">SELECT</button>
+        <button type="button" class="ss-btn" data-btn="start" aria-label="Start">START</button>
+      </div>
+
+      <div class="speaker" aria-hidden="true"></div>
+    </div>
+
+    <aside class="help">
+      <h1>Tetris <span>Game Boy · 1989</span></h1>
+      <p>
+        Recreation of Nintendo’s Game Boy <em>Tetris</em> — the pack-in classic that made
+        <strong>Korobeiniki</strong> the Tetris theme. Original hardware used a
+        4-shade green LCD (not full color); this site matches that look.
+      </p>
+      <h2>Controls</h2>
+      <ul>
+        <li><kbd>←</kbd><kbd>→</kbd> / A D — move</li>
+        <li><kbd>↓</kbd> / S — soft drop</li>
+        <li><kbd>↑</kbd> — rotate (CCW)</li>
+        <li><kbd>Enter</kbd> — start / pause</li>
+        <li><kbd>Shift</kbd> — select / menu</li>
+        <li><kbd>M</kbd> — mute music</li>
+      </ul>
+      <h2>Rules (faithful)</h2>
+      <ul>
+        <li>10×18 field · left-handed Nintendo rotation</li>
+        <li>No hard drop · no wall kicks · no hold</li>
+        <li>Nintendo scoring · soft-drop points</li>
+        <li>Level up every 10 lines (A-Type)</li>
+      </ul>
+      <p class="credit">Fan recreation for the web · not affiliated with Nintendo or The Tetris Company</p>
+    </aside>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

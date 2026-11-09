@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="description" content="Starship quarters. Warp, drop out, and orbit the solar system from the viewport." />
+  <title>Quarters</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect fill='%230c0b0a' width='64' height='64'/%3E%3Crect fill='%231c1a18' x='6' y='10' width='52' height='36' rx='2'/%3E%3Crect fill='%23010208' x='10' y='14' width='44' height='28'/%3E%3Cg stroke='%23dce9ff' stroke-width='1.2' opacity='0.9'%3E%3Cpath d='M12 20h10M18 26h16M14 32h12M28 22h14'/%3E%3C/g%3E%3C/svg%3E" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      --warp: 1;
+      --flash: 0;
+      --glow: 170, 200, 255;
+      --glow-a: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #070706;
+      user-select: none;
+    }
+
+    canvas#warp {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      display: block;
+      background: #010104;
+    }
+
+    .cabin {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(56px, 8vw) 1fr minmax(56px, 8vw);
+      grid-template-rows: minmax(48px, 9vh) 1fr minmax(88px, 16vh);
+      width: 100%;
+      height: 100%;
+      min-height: 100dvh;
+    }
+
+    .ceiling {
+      grid-column: 1 / -1;
+      position: relative;
+      background:
+        linear-gradient(to bottom, #1a1714 0%, #12100e 70%, #0c0b0a 100%);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+      z-index: 3;
+    }
+
+    .ceiling .cove {
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      bottom: 10px;
+      height: 7px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, transparent, #c9a070 12%, #e8d0a8 50%, #c9a070 88%, transparent);
+      box-shadow: 0 6px 18px rgba(232, 196, 140, 0.28);
+      opacity: calc(0.7 * (1 - var(--warp)));
+    }
+
+    .ceiling .cove.cool {
+      background: linear-gradient(90deg, transparent, #8ea4c4 12%, #d5e4ff 50%, #8ea4c4 88%, transparent);
+      box-shadow: 0 8px 22px rgba(170, 198, 255, 0.28);
+      opacity: calc(var(--warp) * 0.45);
+    }
+
+    .wall {
+      background:
+        repeating-linear-gradient(
+          90deg,
+          #141210 0 18px,
+          #171512 18px 19px,
+          #141210 19px 38px
+        );
+      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.35);
+      z-index: 2;
+    }
+    .wall.left {
+      background:
+        linear-gradient(90deg, #0b0a09, #151310 28%, #171512 100%);
+      box-shadow: 10px 0 28px rgba(0, 0, 0, 0.5);
+    }
+    .wall.right {
+      background:
+        linear-gradient(270deg, #0b0a09, #151310 28%, #171512 100%);
+      box-shadow: -10px 0 28px rgba(0, 0, 0, 0.5);
+    }
+
+    .bay {
+      position: relative;
+      min-height: 0;
+      background: transparent;
+    }
+
+    .frame-edge {
+      position: absolute;
+      pointer-events: none;
+    }
+    .frame-edge.n {
+      top: 8px; left: 4px; right: 4px; height: 22px;
+      background: linear-gradient(to bottom, #3a342e, #1a1816);
+      box-shadow: 0 -2px 0 #080706, inset 0 1px 0 rgba(255, 230, 200, 0.14);
+    }
+    .frame-edge.s {
+      bottom: 8px; left: 4px; right: 4px; height: 26px;
+      background: linear-gradient(to top, #1a1714, #12110f);
+      box-shadow: 0 2px 0 #080706, inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+    }
+    .frame-edge.w {
+      top: 30px; bottom: 34px; left: 4px; width: 22px;
+      background: linear-gradient(to right, #2a2622, #12110f);
+    }
+    .frame-edge.e {
+      top: 30px; bottom: 34px; right: 4px; width: 22px;
+      background: linear-gradient(to left, #2a2622, #12110f);
+    }
+
+    .gasket {
+      position: absolute;
+      inset: 26px 22px 30px;
+      border: 1px solid rgba(210, 180, 140, 0.18);
+      box-shadow:
+        0 0 0 3px #0c0b0a,
+        inset 0 0 0 2px rgba(8, 8, 10, 0.85),
+        inset 0 0 36px rgba(186, 214, 255, calc(var(--warp) * 0.16)),
+        inset 0 0 28px rgba(var(--glow), calc(var(--glow-a) * 0.9));
+      pointer-events: none;
+    }
+
+    .bolt {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #8a8378, #2a2622 62%, #0a0908);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.22), 0 0 0 1px #080706;
+      z-index: 4;
+      pointer-events: none;
+    }
+    .bolt.tl { top: 14px; left: 10px; }
+    .bolt.tr { top: 14px; right: 10px; }
+    .bolt.bl { bottom: 16px; left: 10px; }
+    .bolt.br { bottom: 16px; right: 10px; }
+
+    .viewport {
+      position: absolute;
+      inset: 30px 26px 34px;
+      overflow: hidden;
+      background: transparent;
+      pointer-events: none;
+    }
+
+    .glass {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to bottom,
+          rgba(232, 208, 168, calc(0.055 * (1 - var(--warp)))) 0%,
+          transparent 16%),
+        linear-gradient(100deg,
+          rgba(255, 244, 220, 0.045) 0%,
+          transparent 18%,
+          transparent 62%,
+          rgba(190, 214, 255, calc(0.02 + var(--warp) * 0.05)) 100%),
+        linear-gradient(90deg,
+          rgba(150, 190, 255, calc(var(--warp) * 0.07)) 0%,
+          transparent 22%,
+          transparent 78%,
+          rgba(255, 186, 150, calc(var(--warp) * 0.045)) 100%);
+      box-shadow: inset 0 0 80px rgba(210, 230, 255, calc(var(--flash) * 0.18));
+      pointer-events: none;
+    }
+
+    .glass-edge {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      box-shadow:
+        inset 0 16px 26px rgba(0, 0, 0, 0.32),
+        inset 0 -12px 20px rgba(0, 0, 0, 0.26),
+        inset 0 0 60px rgba(40, 90, 160, 0.06);
+    }
+
+    .seat {
+      grid-column: 1 / -1;
+      position: relative;
+      z-index: 3;
+      background:
+        linear-gradient(to bottom, #1c1916 0%, #141210 22%, #0e0d0c 100%);
+      box-shadow: 0 -16px 36px rgba(0, 0, 0, 0.55);
+      clip-path: polygon(0 18%, 4% 0, 96% 0, 100% 18%, 100% 100%, 0 100%);
+    }
+
+    .seat::before {
+      content: "";
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      top: 10px;
+      height: 14px;
+      border-radius: 2px;
+      background: linear-gradient(to bottom, #2a2520, #1a1714);
+      box-shadow: 0 1px 0 rgba(255, 220, 180, 0.08);
+    }
+
+    .seat::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to bottom,
+          rgba(176, 206, 255, calc(var(--warp) * 0.09 + var(--flash) * 0.05)),
+          transparent 46%),
+        linear-gradient(to bottom,
+          rgba(var(--glow), var(--glow-a)),
+          transparent 58%);
+      pointer-events: none;
+    }
+
+    @media (max-width: 640px) {
+      .cabin {
+        grid-template-columns: 36px 1fr 36px;
+        grid-template-rows: 40px 1fr minmax(72px, 18vh);
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="warp"></canvas>
+
+  <div class="cabin">
+    <div class="ceiling"><div class="cove"></div><div class="cove cool"></div></div>
+    <div class="wall left"></div>
+    <div class="bay">
+      <div class="frame-edge n"></div>
+      <div class="frame-edge e"></div>
+      <div class="frame-edge s"></div>
+      <div class="frame-edge w"></div>
+      <div class="gasket"></div>
+      <span class="bolt tl"></span>
+      <span class="bolt tr"></span>
+      <span class="bolt bl"></span>
+      <span class="bolt br"></span>
+      <div class="viewport" id="viewport">
+        <div class="glass"></div>
+        <div class="glass-edge"></div>
+      </div>
+    </div>
+    <div class="wall right"></div>
+    <div class="seat"></div>
+  </div>
+
+  <script>
+    const rand = (a, b) => a + Math.random() * (b - a);
+    const pick = (arr) => arr[(Math.random() * arr.length) | 0];
+    const TAU = Math.PI * 2;
+    const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const fade = (t) => t * t * (3 - 2 * t);
+    const smoothstep = (e0, e1, x) => {
+      const t = clamp((x - e0) / (e1 - e0), 0, 1);
+      return t * t * (3 - 2 * t);
+    };
+    const easeOut = (t) => 1 - (1 - t) * (1 - t);
+    const easeIn = (t) => t * t;
+
+    function makeRng(seed) {
+      let s = (seed >>> 0) || 1;
+      return () => {
+        s = (s * 1664525 + 1013904223) >>> 0;
+        return s / 4294967296;
+      };
+    }
+
+    function hash3(ix, iy, iz) {
+      let n = Math.imul(ix | 0, 374761393) + Math.imul(iy | 0, 668265263) + Math.imul(iz | 0, 1447963459);
+      n = Math.imul(n ^ (n >>> 13), 1274126177);
+      return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+    }
+
+    function vnoise(x, y, z) {
+      const x0 = Math.floor(x), y0 = Math.floor(y), z0 = Math.floor(z);
+      const fx = x - x0, fy = y - y0, fz = z - z0;
+      const ux = fade(fx), uy = fade(fy), uz = fade(fz);
+      const n000 = hash3(x0, y0, z0), n100 = hash3(x0 + 1, y0, z0);
+      const n010 = hash3(x0, y0 + 1, z0), n110 = hash3(x0 + 1, y0 + 1, z0);
+      const n001 = hash3(x0, y0, z0 + 1), n101 = hash3(x0 + 1, y0, z0 + 1);
+      const n011 = hash3(x0, y0 + 1, z0 + 1), n111 = hash3(x0 + 1, y0 + 1, z0 + 1);
+      const nx00 = lerp(n000, n100, ux), nx10 = lerp(n010, n110, ux);
+      const nx01 = lerp(n001, n101, ux), nx11 = lerp(n011, n111, ux);
+      return lerp(lerp(nx00, nx10, uy), lerp(nx01, nx11, uy), uz);
+    }
+
+    function fbm3(x, y, z, oct) {
+      let a = 0, w = 0.5, f = 1, s = 0;
+      for (let i = 0; i < oct; i++) {
+        a += w * vnoise(x * f, y * f, z * f);
+        s += w;
+        w *= 0.5;
+        f *= 2.03;
+      }
+      return a / s;
+    }
+
+    function mix3(a, b, t) {
+      return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+    }
+
+    const canvas = document.getElementById("warp");
+    const ctx = canvas.getContext("2d", { alpha: false });
+    const viewEl = document.getElementById("viewport");
+    let dpr = 1;
+    let W = 0, H = 0;
+    let view = { x: 0, y: 0, w: 0, h: 0, cx: 0, cy: 0 };
+    let fov = 400;
+
+    function measureView() {
+      const r = viewEl.getBoundingClientRect();
+      view = {
+        x: r.left * dpr,
+        y: r.top * dpr,
+        w: r.width * dpr,
+        h: r.height * dpr,
+        cx: (r.left + r.width * 0.5) * dpr,
+        cy: (r.top + r.height * 0.5) * dpr
+      };
+      fov = Math.max(view.h * 0.72, 120);
+    }
+
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = canvas.width = Math.floor(window.innerWidth * dpr);
+      H = canvas.height = Math.floor(window.innerHeight * dpr);
+      canvas.style.width = window.innerWidth + "px";
+      canvas.style.height = window.innerHeight + "px";
+      measureView();
+    }
+
+    window.addEventListener("resize", resize);
+
+    function halfX(z) {
+      return (view.w * 0.5 / fov) * z * 1.2;
+    }
+    function halfY(z) {
+      return (view.h * 0.5 / fov) * z * 1.15;
+    }
+
+    function starColor(mag) {
+      const roll = Math.random();
+      if (mag > 0.84 && roll < 0.5) return [186, 210, 255];
+      if (mag > 0.58 && roll < 0.62) return [236, 242, 255];
+      if (roll < 0.18) return [255, 238, 220];
+      if (roll < 0.48) return [255, 214, 186];
+      if (roll < 0.82) return [255, 190, 156];
+      return [255, 246, 236];
+    }
+
+    function spawnStar(star, fromLeft) {
+      const z = rand(0.85, 1.35);
+      const ySpan = halfY(z);
+      const xSpan = halfX(z);
+      star.z = z;
+      star.y = rand(-ySpan, ySpan);
+      star.x = fromLeft ? -xSpan - rand(0.02, 0.35) : rand(-xSpan, xSpan);
+      star.mag = Math.pow(Math.random(), 2.35);
+      star.speed = 0.62 + Math.pow(Math.random(), 0.5) * 0.7;
+      if (Math.random() < 0.035) {
+        star.mag = Math.max(star.mag, rand(0.82, 1));
+        star.speed = rand(1.55, 2.35);
+      }
+      const hue = starColor(star.mag);
+      star.r = hue[0]; star.g = hue[1]; star.b = hue[2];
+      star.flicker = rand(0, TAU);
+      star.tw = rand(0.015, 0.045);
+      return star;
+    }
+
+    const stars = [];
+    let galaxy = null;
+    let galaxyY = 0.42;
+    let clouds = null;
+
+    function seedField() {
+      stars.length = 0;
+      const count = Math.round(clamp((window.innerWidth * window.innerHeight) / 1450, 420, 980));
+      for (let i = 0; i < count; i++) stars.push(spawnStar({}, false));
+      galaxyY = rand(0.3, 0.62);
+    }
+
+    function buildGalaxy() {
+      const W = 768, H = 192;
+      const c = document.createElement("canvas");
+      c.width = W;
+      c.height = H;
+      const g = c.getContext("2d");
+      const img = g.createImageData(W, H);
+      const d = img.data;
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          const u = x / W;
+          const v = y / H;
+          const band = (v - 0.5) - (u - 0.5) * 0.16;
+          const core = Math.exp(-band * band * 14);
+          const dust = fbm3(u * 3.2, v * 2.4, 2.1, 4);
+          const clump = fbm3(u * 7, v * 4, 6.2, 3);
+          const lane = fbm3(u * 5, v * 1.6, 1.4, 3);
+          let bright = core * (0.22 + 0.5 * dust) * (0.35 + 0.45 * clump);
+          bright *= 0.35 + 0.65 * smoothstep(0.28, 0.7, lane);
+          const bulge = Math.exp(-((u - 0.46) * (u - 0.46) * 10 + band * band * 16));
+          bright += bulge * 0.16;
+          bright = clamp(bright, 0, 1);
+          const i = (y * W + x) * 4;
+          d[i] = (120 * bright + 50 * bulge) | 0;
+          d[i + 1] = (130 * bright + 36 * bulge) | 0;
+          d[i + 2] = (160 * bright + 18 * bulge) | 0;
+          d[i + 3] = (bright * 180) | 0;
+        }
+      }
+      g.putImageData(img, 0, 0);
+      return c;
+    }
+
+    function buildClouds() {
+      const W = 384, H = 192;
+      const c = document.createElement("canvas");
+      c.width = W;
+      c.height = H;
+      const g = c.getContext("2d");
+      const img = g.createImageData(W, H);
+      const d = img.data;
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          const u = x / W;
+          const v = y / H;
+          const lat = (v - 0.5) * Math.PI;
+          const stretch = 0.4 + 0.6 * Math.cos(lat);
+          const n = fbm3(u * 5 * stretch, v * 2.6, 1.3, 4);
+          const n2 = fbm3(u * 11 * stretch, v * 6, 4.2, 2);
+          const eq = Math.exp(-lat * lat * 6);
+          let a = smoothstep(0.46, 0.68, n * (0.72 + 0.28 * eq));
+          a *= 0.4 + 0.6 * n2;
+          a = clamp(a, 0, 1);
+          const i = (y * W + x) * 4;
+          const c8 = (a * 255) | 0;
+          d[i] = d[i + 1] = d[i + 2] = c8;
+          d[i + 3] = 255;
+        }
+      }
+      g.putImageData(img, 0, 0);
+      return c;
+    }
+
+    function project(x, y, z) {
+      const s = fov / Math.max(z, 0.08);
+      return [view.cx + x * s, view.cy + y * s];
+    }
+
+    const WORLDS = [
+      {
+        id: "earth",
+        map: "planets/earth.jpg",
+        atmo: [90, 160, 255],
+        tilt: 0.409,
+        spin: 0.28,
+        ocean: 1,
+        moons: [{ map: "planets/moon.jpg", size: 0.14, dist: 1.72, speed: 0.22 }],
+        rings: null
+      },
+      {
+        id: "mars",
+        map: "planets/mars.jpg",
+        atmo: [210, 140, 90],
+        tilt: 0.439,
+        spin: 0.26,
+        ocean: 0,
+        moons: [],
+        rings: null
+      },
+      {
+        id: "jupiter",
+        map: "planets/jupiter.jpg",
+        atmo: [255, 210, 150],
+        tilt: 0.054,
+        spin: 0.55,
+        ocean: 0,
+        moons: [
+          { map: "planets/io.jpg", size: 0.09, dist: 1.42, speed: 0.38 },
+          { map: "planets/europa.jpg", size: 0.08, dist: 1.95, speed: -0.24 }
+        ],
+        rings: null
+      },
+      {
+        id: "saturn",
+        map: "planets/saturn.jpg",
+        atmo: [255, 210, 140],
+        tilt: 0.466,
+        spin: 0.48,
+        ocean: 0,
+        moons: [{ map: "planets/iapetus.jpg", size: 0.08, dist: 2.45, speed: 0.18 }],
+        rings: { inner: 1.22, outer: 2.15 }
+      },
+      {
+        id: "venus",
+        map: "planets/venus.jpg",
+        atmo: [255, 190, 110],
+        tilt: 0.047,
+        spin: -0.12,
+        ocean: 0,
+        moons: [],
+        rings: null
+      },
+      {
+        id: "neptune",
+        map: "planets/neptune.jpg",
+        atmo: [80, 140, 255],
+        tilt: 0.494,
+        spin: 0.42,
+        ocean: 0,
+        moons: [],
+        rings: null
+      },
+      {
+        id: "deathstar",
+        map: "planets/deathstar.png",
+        atmo: [0, 0, 0],
+        tilt: 0,
+        spin: 0,
+        ocean: 0,
+        metal: 0,
+        still: 1,
+        imposing: 1,
+        face: 0,
+        orbit: [14000, 22000],
+        moons: [],
+        rings: null
+      }
+    ];
+    const forceWorld = new URLSearchParams(location.search).get("world");
+
+    const TEXTURE_PATHS = [
+      "planets/earth.jpg", "planets/mars.jpg", "planets/jupiter.jpg",
+      "planets/saturn.jpg", "planets/venus.jpg", "planets/neptune.jpg",
+      "planets/deathstar.png",
+      "planets/moon.jpg", "planets/europa.jpg", "planets/io.jpg",
+      "planets/iapetus.jpg", "planets/saturn-rings.png"
+    ];
+    const images = {};
+    let texturesReady = false;
+    let ringSprite = null;
+
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const im = new Image();
+        const done = (ok) => {
+          clearTimeout(timer);
+          im.onload = im.onerror = null;
+          ok ? resolve(im) : reject(new Error(src));
+        };
+        const timer = setTimeout(() => done(false), 7000);
+        im.onload = () => done(true);
+        im.onerror = () => done(false);
+        im.src = new URL(src, document.baseURI).href;
+      });
+    }
+
+    function hasPlanetMaps() {
+      return WORLDS.some((w) => images[w.map]);
+    }
+
+    function markTexturesReady() {
+      if (images["planets/saturn-rings.png"] && !ringSprite) {
+        try { ringSprite = buildRingSprite(images["planets/saturn-rings.png"]); }
+        catch (_) { /* rings optional */ }
+      }
+      texturesReady = hasPlanetMaps();
+      if (texturesReady && !scene.nextPlanet) scene.nextPlanet = makePlanet();
+    }
+
+    function loadAllTextures() {
+      return Promise.all(TEXTURE_PATHS.map((p) =>
+        loadImage(p).then((im) => { images[p] = im; }).catch(() => null)
+      )).then(markTexturesReady);
+    }
+
+    function buildRingSprite(img) {
+      const S = 512;
+      const c = document.createElement("canvas");
+      c.width = c.height = S;
+      const g = c.getContext("2d");
+      const tmp = document.createElement("canvas");
+      tmp.width = img.width;
+      tmp.height = img.height;
+      const tg = tmp.getContext("2d");
+      tg.drawImage(img, 0, 0);
+      const src = tg.getImageData(0, 0, img.width, img.height).data;
+      const out = g.createImageData(S, S);
+      const d = out.data;
+      const cx = S * 0.5;
+      for (let y = 0; y < S; y++) {
+        for (let x = 0; x < S; x++) {
+          const dx = x - cx, dy = y - cx;
+          const r = Math.hypot(dx, dy) / cx;
+          if (r < 0.55 || r > 0.98) continue;
+          const t = (r - 0.55) / 0.43;
+          const u = Math.min(img.width - 1, (t * (img.width - 1)) | 0);
+          const v = (img.height * 0.5) | 0;
+          const i = (v * img.width + u) * 4;
+          const o = (y * S + x) * 4;
+          d[o] = src[i]; d[o + 1] = src[i + 1]; d[o + 2] = src[i + 2]; d[o + 3] = src[i + 3];
+        }
+      }
+      g.putImageData(out, 0, 0);
+      return c;
+    }
+
+    function createGlobeRenderer() {
+      const SIZE = 1024;
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = SIZE;
+      let gl;
+      try {
+        gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: false, antialias: true })
+          || canvas.getContext("experimental-webgl", { alpha: true, premultipliedAlpha: false });
+      } catch (_) {
+        return null;
+      }
+      if (!gl) return null;
+      gl.getExtension("OES_standard_derivatives");
+      function sh(type, src) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+          console.error(gl.getShaderInfoLog(s));
+          return null;
+        }
+        return s;
+      }
+      const vs = sh(gl.VERTEX_SHADER, `
+        attribute vec2 a;
+        varying vec2 vP;
+        void main() {
+          vP = a;
+          gl_Position = vec4(a, 0.0, 1.0);
+        }
+      `);
+      const fs = sh(gl.FRAGMENT_SHADER, `
+        #extension GL_OES_standard_derivatives : enable
+        precision mediump float;
+        uniform sampler2D uMap;
+        uniform sampler2D uCloud;
+        uniform float uRot, uTilt, uOcean, uMetal, uHasCloud;
+        uniform vec3 uLight, uAtmo;
+        uniform vec4 uDish;
+        uniform vec2 uHull;
+        varying vec2 vP;
+        const float PI = 3.14159265;
+        const float TAU = 6.2831853;
+        float hash13(vec3 p) {
+          p = fract(p * 0.1031);
+          p += dot(p, p.yzx + 33.33);
+          return fract((p.x + p.y) * p.z);
+        }
+        void main() {
+          vec2 p = vP;
+          float rad = length(p);
+          if (rad > 1.0) discard;
+          float z = sqrt(max(0.0, 1.0 - rad * rad));
+          vec3 n = vec3(p.x, p.y, z);
+          float ct = cos(uTilt), st = sin(uTilt);
+          float cr = cos(uRot), sr = sin(uRot);
+          vec3 tlt = vec3(n.x, n.y * ct - n.z * st, n.y * st + n.z * ct);
+          vec3 r = vec3(tlt.x * cr - tlt.z * sr, tlt.y, tlt.x * sr + tlt.z * cr);
+          float lon = atan(r.x, r.z);
+          float lat = asin(clamp(r.y, -1.0, 1.0));
+          vec2 uv = vec2(lon / TAU + 0.5, 0.5 - lat / PI);
+          vec3 albedo = texture2D(uMap, uv).rgb;
+          vec3 nP = r;
+          float ao = 1.0;
+          float hf = 0.0;
+          if (uDish.z > 0.001) {
+            vec3 D = vec3(cos(uDish.x) * sin(uDish.y), sin(uDish.x), cos(uDish.x) * cos(uDish.y));
+            float ca = clamp(dot(r, D), -1.0, 1.0);
+            float nr = acos(ca) / uDish.z;
+            if (nr < 1.04) {
+              vec3 radial = r - D * ca;
+              float rl = length(radial);
+              radial = rl > 0.0001 ? radial / rl : vec3(0.0, 0.0, 1.0);
+              float wall = smoothstep(0.10, 0.50, nr) * (1.0 - smoothstep(0.76, 0.98, nr));
+              float floorN = 1.0 - smoothstep(0.0, 0.34, nr);
+              float lip = smoothstep(0.80, 0.91, nr) * (1.0 - smoothstep(0.98, 1.05, nr));
+              nP = normalize(r - radial * wall * (0.6 + 1.8 * uDish.w) + D * floorN * 0.18 + radial * lip * 1.35);
+              ao *= 1.0 - 0.52 * pow(max(0.0, 1.0 - nr), 1.4);
+            }
+          }
+          if (uHull.y > 0.0001) {
+            float g = 1.0 - smoothstep(0.0, uHull.y, abs(lat));
+            if (g > 0.0) {
+              vec3 away = nP - vec3(0.0, nP.y, 0.0);
+              float al = length(away);
+              away = al > 0.0001 ? away / al : vec3(1.0, 0.0, 0.0);
+              nP = normalize(nP + away * g * 0.4);
+              ao *= 1.0 - 0.3 * g;
+            }
+          }
+          if (uHull.x > 0.001) {
+            vec3 fid = floor(r * 70.0);
+            vec3 ff = fract(r * 70.0);
+            float h = hash13(fid);
+            float edge = min(min(ff.x, 1.0 - ff.x), min(min(ff.y, 1.0 - ff.y), min(ff.z, 1.0 - ff.z)));
+            hf = h * smoothstep(0.0, 0.13, edge) * uHull.x * 0.04;
+          }
+          vec3 v = vec3(nP.x * cr + nP.z * sr, nP.y, -nP.x * sr + nP.z * cr);
+          vec3 nV = vec3(v.x, v.y * ct + v.z * st, -v.y * st + v.z * ct);
+          nV = normalize(nV - vec3(dFdx(hf), dFdy(hf), 0.0) * 22.0);
+          vec3 L = normalize(uLight);
+          float ndl = dot(nV, L);
+          float soft = 0.05 + 0.2 * clamp(uOcean, 0.0, 1.0);
+          float diff = clamp((ndl + soft) / (1.0 + soft), 0.0, 1.0);
+          float mu = clamp(n.z, 0.0, 1.0);
+          float limb = pow(mu, 0.5);
+          vec3 col = albedo * (0.045 + 0.955 * diff) * (0.5 + 0.5 * limb) * ao;
+          float ocean = 0.0;
+          if (uOcean > 0.5) {
+            ocean = step(albedo.r * 1.15 + 0.05, albedo.b) * step(0.15, albedo.b);
+            vec3 hv = normalize(L + vec3(0.0, 0.0, 1.0));
+            float spec = pow(max(dot(nV, hv), 0.0), 160.0) * ocean * max(ndl, 0.0);
+            col += spec * vec3(0.4, 0.46, 0.5);
+            float night = 1.0 - smoothstep(0.0, 0.16, ndl);
+            vec2 scaled = uv * vec2(520.0, 260.0);
+            vec2 cell = floor(scaled);
+            vec2 f = fract(scaled) - 0.5;
+            float h1 = hash13(vec3(cell, 2.0));
+            float cluster = smoothstep(0.58, 0.92, hash13(vec3(floor(cell / 7.0), 4.0)));
+            float city = step(0.955, h1) * cluster * (1.0 - ocean) * night;
+            city *= smoothstep(0.42, 0.02, length(f));
+            col += city * vec3(1.0, 0.82, 0.55) * 0.7;
+          }
+          if (uHasCloud > 0.5) {
+            float c = texture2D(uCloud, uv).r;
+            float cl = 0.1 + 0.9 * diff;
+            col *= 1.0 - c * 0.32 * max(diff, 0.15);
+            col = mix(col, vec3(cl * 0.93, cl * 0.96, cl), clamp(c * 1.05, 0.0, 0.92));
+          }
+          float litLimb = smoothstep(-0.25, 0.5, ndl);
+          float air = pow(1.0 - mu, 2.6);
+          col += (uAtmo / 255.0) * air * (0.06 + 0.94 * litLimb) * 0.85;
+          if (uMetal > 0.5) {
+            vec3 hv = normalize(L + vec3(0.0, 0.0, 1.0));
+            float spec = pow(max(dot(nV, hv), 0.0), 42.0) * max(ndl, 0.0);
+            col += spec * vec3(0.30, 0.32, 0.34);
+          }
+          float alpha = smoothstep(1.0, 0.992, rad);
+          gl_FragColor = vec4(col, alpha);
+        }
+      `);
+      if (!vs || !fs) return null;
+      const prog = gl.createProgram();
+      gl.attachShader(prog, vs);
+      gl.attachShader(prog, fs);
+      gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        console.error(gl.getProgramInfoLog(prog));
+        return null;
+      }
+      gl.useProgram(prog);
+      const buf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+      const loc = gl.getAttribLocation(prog, "a");
+      gl.enableVertexAttribArray(loc);
+      gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      const uMap = gl.getUniformLocation(prog, "uMap");
+      const uCloud = gl.getUniformLocation(prog, "uCloud");
+      const uHasCloud = gl.getUniformLocation(prog, "uHasCloud");
+      const uRot = gl.getUniformLocation(prog, "uRot");
+      const uTilt = gl.getUniformLocation(prog, "uTilt");
+      const uOcean = gl.getUniformLocation(prog, "uOcean");
+      const uMetal = gl.getUniformLocation(prog, "uMetal");
+      const uLight = gl.getUniformLocation(prog, "uLight");
+      const uAtmo = gl.getUniformLocation(prog, "uAtmo");
+      const uDish = gl.getUniformLocation(prog, "uDish");
+      const uHull = gl.getUniformLocation(prog, "uHull");
+      const texCache = new Map();
+      const blank = document.createElement("canvas");
+      blank.width = blank.height = 2;
+      function texFor(img) {
+        let t = texCache.get(img);
+        if (t) return t;
+        t = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, t);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+        const err = gl.getError();
+        if (err) return t;
+        texCache.set(img, t);
+        return t;
+      }
+      function render(img, rotation, tilt, light, atmo, ocean, metal, dish, hull, cloud) {
+        try {
+          gl.viewport(0, 0, SIZE, SIZE);
+          gl.clearColor(0, 0, 0, 0);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          gl.useProgram(prog);
+          gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+          gl.enableVertexAttribArray(loc);
+          gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+          gl.activeTexture(gl.TEXTURE0);
+          gl.bindTexture(gl.TEXTURE_2D, texFor(img));
+          gl.uniform1i(uMap, 0);
+          gl.activeTexture(gl.TEXTURE1);
+          gl.bindTexture(gl.TEXTURE_2D, texFor(cloud || blank));
+          gl.uniform1i(uCloud, 1);
+          gl.uniform1f(uHasCloud, cloud ? 1 : 0);
+          gl.uniform1f(uRot, rotation);
+          gl.uniform1f(uTilt, tilt);
+          gl.uniform1f(uOcean, ocean);
+          gl.uniform1f(uMetal, metal || 0);
+          gl.uniform3f(uLight, light.x, light.y, light.z);
+          gl.uniform3f(uAtmo, atmo[0], atmo[1], atmo[2]);
+          if (dish) gl.uniform4f(uDish, dish.lat, dish.lon, dish.rad, dish.depth);
+          else gl.uniform4f(uDish, 0, 0, 0, 0);
+          if (hull) gl.uniform2f(uHull, hull.bump || 0, hull.trench || 0);
+          else gl.uniform2f(uHull, 0, 0);
+          gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+          return canvas;
+        } catch (_) {
+          return null;
+        }
+      }
+      return { render, canvas };
+    }
+
+    let globeGL = null;
+    try { globeGL = createGlobeRenderer(); } catch (_) { globeGL = null; }
+    const globeHold = document.createElement("canvas");
+    globeHold.width = globeHold.height = 512;
+    const globeHoldCtx = globeHold.getContext("2d");
+    const fallbackGlobe = document.createElement("canvas");
+    fallbackGlobe.width = fallbackGlobe.height = 512;
+    const fallbackCtx = fallbackGlobe.getContext("2d");
+
+    function renderGlobe2D(img, rotation, light) {
+      const s = 512, g = fallbackCtx;
+      g.clearRect(0, 0, s, s);
+      g.save();
+      g.beginPath();
+      g.arc(s * 0.5, s * 0.5, s * 0.5 - 1, 0, TAU);
+      g.clip();
+      const th = s * 1.15;
+      const tw = (img.width / img.height) * th;
+      const ox = s * 0.5 - tw * (((rotation / TAU) % 1) + 1);
+      const oy = (s - th) * 0.5;
+      g.drawImage(img, ox, oy, tw, th);
+      g.drawImage(img, ox + tw, oy, tw, th);
+      const lx = 0.5 + light.x * 0.22;
+      const ly = 0.5 + light.y * 0.22;
+      const lg = g.createRadialGradient(s * lx, s * ly, s * 0.08, s * 0.5, s * 0.5, s * 0.5);
+      lg.addColorStop(0, "rgba(255,255,255,0.08)");
+      lg.addColorStop(0.55, "rgba(0,0,0,0.08)");
+      lg.addColorStop(1, "rgba(0,0,0,0.72)");
+      g.fillStyle = lg;
+      g.fillRect(0, 0, s, s);
+      g.restore();
+      return fallbackGlobe;
+    }
+
+    function makePlanet() {
+      const loaded = WORLDS.filter((w) => images[w.map]);
+      const forced = forceWorld ? loaded.find((w) => w.id === forceWorld) : null;
+      const avoid = scene.lastId;
+      const pool = loaded.filter((w) => w.id !== avoid);
+      const spec = forced || (pool.length ? pool : loaded)[(Math.random() * (pool.length ? pool : loaded).length) | 0];
+      if (!spec) return null;
+      const rng = makeRng((Math.random() * 1e9) | 0);
+      const phase = rng();
+      let lz = phase < 0.38 ? rand(-0.05, 0.28) : phase < 0.78 ? rand(0.12, 0.5) : rand(0.45, 0.82);
+      let lx = rand(-1, 1);
+      let ly = rand(-0.42, 0.42);
+      const llen = Math.hypot(lx, ly, lz) || 1;
+      lx /= llen; ly /= llen; lz /= llen;
+      const close = spec.imposing ? false : rng() < 0.28;
+      const moons = spec.moons.filter((m) => images[m.map]).map((m) => ({
+        map: m.map,
+        size: m.size * (0.9 + rng() * 0.25),
+        dist: m.dist * (0.92 + rng() * 0.18),
+        angle: rng() * Math.PI * 2,
+        speed: m.speed * (0.8 + rng() * 0.5),
+        incl: (0.1 + rng() * 0.36) * (rng() < 0.5 ? -1 : 1),
+        node: rng() * TAU
+      }));
+      return {
+        spec,
+        tilt: spec.tilt * (spec.face != null || rng() < 0.5 ? 1 : -1),
+        spin: spec.still ? 0 : spec.spin * (0.85 + rng() * 0.35),
+        rotation: spec.still ? 0 : spec.face != null ? spec.face + (rng() - 0.5) * 0.55 : rng() * Math.PI * 2,
+        light: { x: lx, y: ly, z: lz },
+        sizeFrac: spec.imposing ? 0.34 + rng() * 0.16 : close ? 0.4 + rng() * 0.16 : 0.24 + rng() * 0.14,
+        ax: spec.imposing ? 0.34 + rng() * 0.32 : close ? (rng() < 0.5 ? 0.12 + rng() * 0.22 : 0.66 + rng() * 0.22) : 0.34 + rng() * 0.32,
+        ay: spec.imposing ? 0.40 + rng() * 0.22 : close ? 0.4 + rng() * 0.34 : 0.42 + rng() * 0.26,
+        driftA: rng() * Math.PI * 2,
+        driftX: spec.still ? 0.003 + rng() * 0.006 : 0.008 + rng() * 0.02,
+        driftY: spec.still ? 0.002 + rng() * 0.005 : 0.005 + rng() * 0.016,
+        driftS: spec.still ? 0.00003 : 0.00008 + rng() * 0.00014,
+        moons
+      };
+    }
+
+    function globeCanvasFor(img, rotation, tilt, light, atmo, ocean, metal, dish, hull, cloud) {
+      if (!img) return null;
+      if (globeGL) {
+        const out = globeGL.render(img, rotation, tilt, light, atmo, ocean, metal, dish, hull, cloud);
+        if (out) return out;
+      }
+      return renderGlobe2D(img, rotation, light);
+    }
+
+    function moonOffset(moon) {
+      const x0 = Math.cos(moon.angle) * moon.dist;
+      const z0 = Math.sin(moon.angle) * moon.dist;
+      const ci = Math.cos(moon.incl), si = Math.sin(moon.incl);
+      const y1 = -z0 * si;
+      const z1 = z0 * ci;
+      const cn = Math.cos(moon.node), sn = Math.sin(moon.node);
+      return {
+        x: x0 * cn - z1 * sn,
+        y: y1,
+        z: x0 * sn + z1 * cn
+      };
+    }
+
+    function drawRing(ctx, px, py, rad, planet, front) {
+      if (!planet.spec.rings || !ringSprite) return;
+      const tilt = planet.tilt;
+      const ry = Math.max(0.12, Math.abs(Math.sin(tilt))) * rad * planet.spec.rings.outer;
+      const rx = rad * planet.spec.rings.outer / 0.98;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.beginPath();
+      if (front) ctx.rect(-rx * 2, 0, rx * 4, ry * 4);
+      else ctx.rect(-rx * 2, -ry * 4, rx * 4, ry * 4);
+      ctx.clip();
+      ctx.scale(1, Math.max(0.14, Math.abs(Math.sin(tilt)) * 0.42));
+      ctx.drawImage(ringSprite, -rx, -rx, rx * 2, rx * 2);
+      ctx.restore();
+    }
+
+    function drawMappedMoon(ctx, px, py, planetRad, moon, planet) {
+      const pos = moonOffset(moon);
+      const mx = px + pos.x * planetRad;
+      const my = py - pos.y * planetRad;
+      const depth = 1 + pos.z * 0.06;
+      const mr = planetRad * moon.size * depth;
+      const img = images[moon.map];
+      const g = globeCanvasFor(img, moon.angle * 0.35, planet.tilt * 0.25, planet.light, [0, 0, 0], 0, 0, null, null, null);
+      if (g) ctx.drawImage(g, mx - mr, my - mr, mr * 2, mr * 2);
+    }
+
+    function drawAtmosphere(px, py, rad, atmo, light) {
+      const sum = atmo[0] + atmo[1] + atmo[2];
+      if (sum < 12) return;
+      const ox = light.x * rad * 0.5;
+      const oy = -light.y * rad * 0.5;
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      const g = ctx.createRadialGradient(px + ox * 0.2, py + oy * 0.2, rad * 0.9, px + ox * 0.08, py + oy * 0.08, rad * 1.035);
+      g.addColorStop(0, `rgba(${atmo[0]},${atmo[1]},${atmo[2]},0)`);
+      g.addColorStop(0.78, `rgba(${atmo[0]},${atmo[1]},${atmo[2]},0)`);
+      g.addColorStop(0.92, `rgba(${atmo[0]},${atmo[1]},${atmo[2]},0.5)`);
+      g.addColorStop(1, `rgba(${atmo[0]},${atmo[1]},${atmo[2]},0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(px, py, rad * 1.04, 0, TAU);
+      ctx.fill();
+      const g2 = ctx.createRadialGradient(px + ox * 0.15, py + oy * 0.15, rad * 0.98, px, py, rad * 1.16);
+      g2.addColorStop(0, `rgba(${atmo[0]},${atmo[1]},${atmo[2]},0.07)`);
+      g2.addColorStop(1, `rgba(${atmo[0]},${atmo[1]},${atmo[2]},0)`);
+      ctx.fillStyle = g2;
+      ctx.beginPath();
+      ctx.arc(px, py, rad * 1.16, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    const scene = {
+      mode: "warp",
+      startedAt: 0,
+      duration: 0,
+      warp: 1,
+      flash: 0,
+      planet: null,
+      nextPlanet: null,
+      planetAlpha: 0,
+      lastId: null
+    };
+
+    function beginWarp() {
+      scene.mode = "warp";
+      scene.startedAt = performance.now();
+      scene.duration = rand(12000, 28000);
+      scene.planet = null;
+      scene.planetAlpha = 0;
+      scene.nextPlanet = texturesReady ? makePlanet() : null;
+    }
+
+    function beginDrop() {
+      if (!hasPlanetMaps()) {
+        loadAllTextures();
+        scene.startedAt = performance.now();
+        scene.duration = 5000;
+        return;
+      }
+      const planet = scene.nextPlanet && images[scene.nextPlanet.spec.map] ? scene.nextPlanet : makePlanet();
+      if (!planet) {
+        scene.startedAt = performance.now();
+        scene.duration = 5000;
+        return;
+      }
+      scene.mode = "drop";
+      scene.startedAt = performance.now();
+      scene.duration = 2600;
+      scene.planet = planet;
+      scene.lastId = planet.spec.id;
+      scene.nextPlanet = null;
+    }
+
+    function beginOrbit() {
+      scene.mode = "orbit";
+      scene.startedAt = performance.now();
+      const range = scene.planet && scene.planet.spec.orbit;
+      scene.duration = range ? rand(range[0], range[1]) : rand(8000, 15000);
+    }
+
+    function beginJump() {
+      scene.mode = "jump";
+      scene.startedAt = performance.now();
+      scene.duration = 2100;
+      scene.flash = 0.55;
+    }
+
+    function paintFlightVars() {
+      const root = document.documentElement;
+      root.style.setProperty("--warp", scene.warp.toFixed(3));
+      root.style.setProperty("--flash", Math.min(1, scene.flash).toFixed(3));
+      const p = scene.planet;
+      if (p && scene.planetAlpha > 0.08 && !p.spec.still) {
+        const a = p.spec.atmo;
+        const glowA = scene.planetAlpha * (0.045 + 0.11 * (1 - scene.warp));
+        root.style.setProperty("--glow", `${a[0]},${a[1]},${a[2]}`);
+        root.style.setProperty("--glow-a", glowA.toFixed(3));
+      } else {
+        root.style.setProperty("--glow-a", "0");
+      }
+    }
+
+    function tickScene(now, dt) {
+      const u = Math.min(1, (now - scene.startedAt) / scene.duration);
+      const prev = scene.mode;
+      if (scene.mode === "warp") {
+        scene.warp = 1;
+        scene.planetAlpha = 0;
+        scene.flash *= 0.9;
+        if (u >= 1) beginDrop();
+      } else if (scene.mode === "drop") {
+        scene.warp = Math.pow(1 - u, 1.45);
+        scene.planetAlpha = easeOut(clamp((u - 0.3) / 0.7, 0, 1));
+        scene.flash = Math.exp(-u * 5.4) * 0.85;
+        if (u >= 1) beginOrbit();
+      } else if (scene.mode === "orbit") {
+        scene.warp = 0;
+        scene.planetAlpha = 1;
+        scene.flash *= 0.86;
+        if (u >= 1) beginJump();
+      } else if (scene.mode === "jump") {
+        const rise = easeIn(clamp((u - 0.06) / 0.94, 0, 1));
+        scene.warp = rise;
+        scene.planetAlpha = 1 - easeIn(clamp((u - 0.1) / 0.55, 0, 1));
+        scene.flash = Math.sin(clamp(u * 1.2, 0, 1) * Math.PI) * 0.45;
+        if (u >= 1) beginWarp();
+      }
+      if (scene.mode !== prev) punchAudio(scene.mode);
+      document.documentElement.dataset.flight = scene.mode;
+      document.documentElement.dataset.world = scene.planet ? scene.planet.spec.id : "";
+      paintFlightVars();
+      const p = scene.planet;
+      if (p) {
+        p.rotation += p.spin * dt * 0.016 * (0.35 + 0.65 * (1 - scene.warp));
+        p.driftA += p.driftS * dt * 16.67;
+        for (const m of p.moons) m.angle += m.speed * dt * 0.016;
+      }
+    }
+
+    function drawPlanet(now) {
+      const p = scene.planet;
+      if (!p || scene.planetAlpha <= 0.01) return;
+      const img = images[p.spec.map];
+      if (!img) return;
+      const minDim = Math.min(view.w, view.h);
+      const rad = p.sizeFrac * minDim;
+      const px = view.x + p.ax * view.w + Math.sin(p.driftA) * p.driftX * view.w;
+      const py = view.y + p.ay * view.h + Math.cos(p.driftA * 0.85) * p.driftY * view.h;
+      const smear = scene.warp * rad * (scene.mode === "jump" ? 0.22 : scene.mode === "drop" ? 0.08 : 0);
+
+      let globe;
+      if (p.spec.still) {
+        globe = img;
+      } else {
+        const cloud = p.spec.ocean > 0.5 ? clouds : null;
+        globe = globeCanvasFor(
+          img, p.rotation, p.tilt, p.light, p.spec.atmo, p.spec.ocean, p.spec.metal || 0,
+          p.spec.dish || null, p.spec.hull || null, cloud
+        );
+        if (!globe) return;
+        if (globeHold.width !== globe.width) {
+          globeHold.width = globeHold.height = globe.width;
+        }
+        globeHoldCtx.clearRect(0, 0, globeHold.width, globeHold.height);
+        globeHoldCtx.drawImage(globe, 0, 0);
+        globe = globeHold;
+      }
+
+      const behind = [];
+      const front = [];
+      for (const m of p.moons) (moonOffset(m).z > 0 ? front : behind).push(m);
+
+      ctx.save();
+      ctx.globalAlpha = scene.planetAlpha;
+
+      for (const m of behind) drawMappedMoon(ctx, px, py, rad, m, p);
+      drawRing(ctx, px + smear * 0.25, py, rad, p, false);
+      drawAtmosphere(px, py, rad, p.spec.atmo, p.light);
+
+      ctx.imageSmoothingEnabled = true;
+      const copies = smear > 2.5 ? 4 : 1;
+      for (let i = 0; i < copies; i++) {
+        const u = copies === 1 ? 1 : i / (copies - 1);
+        ctx.globalAlpha = scene.planetAlpha * (i === copies - 1 ? 1 : 0.14);
+        const ox = smear * (u - 1);
+        ctx.drawImage(globe, px - rad + ox, py - rad, rad * 2, rad * 2);
+      }
+      ctx.globalAlpha = scene.planetAlpha;
+
+      if (p.spec.still) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(px, py, rad * 0.98, 0, TAU);
+        ctx.clip();
+        const gx = px + p.light.x * rad * 0.85;
+        const gy = py - p.light.y * rad * 0.85;
+        const shade = ctx.createRadialGradient(gx, gy, rad * 0.08, px, py, rad * 1.2);
+        shade.addColorStop(0, "rgba(255,255,255,0.1)");
+        shade.addColorStop(0.5, "rgba(0,0,0,0)");
+        shade.addColorStop(1, "rgba(0,0,0,0.28)");
+        ctx.fillStyle = shade;
+        ctx.fillRect(px - rad, py - rad, rad * 2, rad * 2);
+        ctx.restore();
+      }
+
+      drawRing(ctx, px, py, rad, p, true);
+      for (const m of front) drawMappedMoon(ctx, px, py, rad, m, p);
+
+      ctx.restore();
+    }
+
+    let t = 0;
+    let last = performance.now();
+    let sheetTimer = 0;
+    let galaxyShift = 0;
+    const glassHits = [];
+
+    function drawGalaxy(vx, vy, vw, vh, wAmt, dt) {
+      if (!galaxy) return;
+      const cruise = 0.00035 + wAmt * 0.018;
+      galaxyShift += cruise * dt * vw * 0.9;
+      const smear = 1 + wAmt * wAmt * 2.2;
+      const bandH = vh * 0.5;
+      const dw = Math.max(vw, vw * smear);
+      const y = vy + vh * galaxyY - bandH * 0.5;
+      const shift = galaxyShift % dw;
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = 0.1 + wAmt * 0.05;
+      ctx.drawImage(galaxy, vx - shift, y, dw, bandH);
+      ctx.drawImage(galaxy, vx - shift + dw, y, dw, bandH);
+      ctx.restore();
+    }
+
+    function frame(now) {
+      try {
+      const dt = Math.min(1.6, Math.max(0.35, (now - last) / 16.67));
+      last = now;
+      t += dt;
+      if ((t | 0) % 20 === 0) measureView();
+      tickScene(now, dt);
+      if (((t | 0) % 4) === 0) updateFlightAudio();
+
+      const { x: vx, y: vy, w: vw, h: vh } = view;
+      if (vw < 8 || vh < 8) {
+        requestAnimationFrame(frame);
+        return;
+      }
+
+      const wAmt = scene.warp;
+      sheetTimer += dt * wAmt;
+      if (wAmt > 0.72 && sheetTimer > 150 && Math.random() < 0.02) {
+        const y0 = rand(-0.5, 0.5);
+        const n = 7 + ((Math.random() * 9) | 0);
+        for (let i = 0; i < n; i++) {
+          const s = spawnStar({}, true);
+          s.y = y0 * halfY(s.z) + rand(-0.14, 0.14);
+          s.mag = Math.max(s.mag, rand(0.4, 0.95));
+          stars[(Math.random() * stars.length) | 0] = s;
+        }
+        sheetTimer = 0;
+      }
+
+      ctx.fillStyle = "#010104";
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(vx, vy, vw, vh);
+      ctx.clip();
+
+      const shake = (0.22 + scene.flash * 1.5) * wAmt * (0.55 + 0.45 * Math.min(dpr, 1.5));
+      ctx.translate(
+        Math.sin(t * 0.71) * shake + Math.sin(t * 1.83) * shake * 0.3,
+        Math.cos(t * 0.57) * shake * 0.4
+      );
+
+      ctx.fillStyle = "#000001";
+      ctx.fillRect(vx - 8, vy - 8, vw + 16, vh + 16);
+
+      if (wAmt > 0.04) {
+        const wash = ctx.createLinearGradient(vx, vy, vx + vw, vy);
+        wash.addColorStop(0, `rgba(64, 104, 170, ${0.09 * wAmt * wAmt})`);
+        wash.addColorStop(0.28, "rgba(0,0,0,0)");
+        wash.addColorStop(0.72, "rgba(0,0,0,0)");
+        wash.addColorStop(1, `rgba(120, 52, 28, ${0.045 * wAmt * wAmt})`);
+        ctx.fillStyle = wash;
+        ctx.fillRect(vx, vy, vw, vh);
+      }
+
+      drawGalaxy(vx, vy, vw, vh, wAmt, dt);
+
+      ctx.globalCompositeOperation = "lighter";
+      ctx.lineCap = "butt";
+      glassHits.length = 0;
+      const cruise = 0.00035 + wAmt * 0.018;
+      const widthScale = dpr > 1.25 ? 1.35 : 1;
+
+      for (const s of stars) {
+        s.x += cruise * s.speed * s.z * dt;
+        const hx = halfX(s.z);
+        const pixelLen = Math.min(
+          vw * 0.4,
+          wAmt * wAmt * (6 + Math.pow(s.mag, 1.35) * 250) * Math.min(s.speed, 2.1)
+        );
+        const trailWorld = pixelLen * s.z / Math.max(fov, 1);
+        if (s.x - trailWorld > hx || Math.abs(s.y) > halfY(s.z) * 1.2) {
+          spawnStar(s, true);
+          continue;
+        }
+
+        const [px, py] = project(s.x, s.y, s.z);
+        if (px < vx - pixelLen - 8 || px > vx + vw + 8 || py < vy - 8 || py > vy + vh + 8) continue;
+
+        const twinkle = wAmt > 0.4 ? 1 : 0.7 + 0.3 * Math.sin(t * s.tw + s.flicker);
+        let a = clamp(Math.pow(Math.max(s.mag, 0.001), 0.7) * 0.92 + 0.06, 0, 1) * twinkle;
+
+        if (pixelLen < 2.4) {
+          const point = Math.max(0.55, (0.4 + s.mag * 1.15) * widthScale);
+          if (s.mag > 0.74) {
+            ctx.fillStyle = `rgba(${s.r},${s.g},${s.b},${a * 0.16})`;
+            ctx.beginPath();
+            ctx.arc(px, py, point * 3.1, 0, TAU);
+            ctx.fill();
+          }
+          ctx.fillStyle = `rgba(${s.r},${s.g},${s.b},${a})`;
+          ctx.beginPath();
+          ctx.arc(px, py, point * 0.55, 0, TAU);
+          ctx.fill();
+          continue;
+        }
+
+        const k = wAmt * 0.62;
+        const hr = (s.r + (198 - s.r) * k) | 0;
+        const hg = (s.g + (220 - s.g) * k) | 0;
+        const hb = (s.b + (255 - s.b) * k) | 0;
+        const x0 = px - pixelLen;
+
+        ctx.strokeStyle = `rgba(${s.r},${s.g},${s.b},${a * 0.16})`;
+        ctx.lineWidth = (1.1 + s.mag * 2.4) * widthScale;
+        ctx.beginPath();
+        ctx.moveTo(x0, py);
+        ctx.lineTo(px, py);
+        ctx.stroke();
+
+        ctx.strokeStyle = `rgba(${s.r},${s.g},${s.b},${a * 0.5})`;
+        ctx.lineWidth = (0.45 + s.mag * 0.85) * widthScale;
+        ctx.beginPath();
+        ctx.moveTo(px - pixelLen * 0.7, py);
+        ctx.lineTo(px, py);
+        ctx.stroke();
+
+        ctx.strokeStyle = `rgba(${hr},${hg},${hb},${Math.min(1, a)})`;
+        ctx.lineWidth = (0.4 + s.mag * 0.7) * widthScale;
+        ctx.beginPath();
+        ctx.moveTo(px - Math.max(3, pixelLen * 0.16), py);
+        ctx.lineTo(px, py);
+        ctx.stroke();
+
+        if (s.mag > 0.55) {
+          ctx.fillStyle = `rgba(255,255,255,${a * 0.75})`;
+          ctx.beginPath();
+          ctx.arc(px, py, Math.max(0.55, s.mag * 1.05) * widthScale * 0.65, 0, TAU);
+          ctx.fill();
+        }
+        if (s.mag > 0.8) glassHits.push({ px, py, len: pixelLen, r: hr, g: hg, b: hb });
+      }
+
+      ctx.globalCompositeOperation = "source-over";
+      drawPlanet(now);
+
+      if (glassHits.length) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.lineWidth = widthScale;
+        for (let i = 0; i < glassHits.length; i++) {
+          const h = glassHits[i];
+          ctx.strokeStyle = `rgba(${h.r},${h.g},${h.b},0.07)`;
+          ctx.beginPath();
+          ctx.moveTo(h.px - h.len * 0.55, h.py + 6 * widthScale);
+          ctx.lineTo(h.px, h.py + 6 * widthScale);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      if (scene.flash > 0.02) {
+        ctx.fillStyle = `rgba(214, 232, 255, ${scene.flash * 0.2})`;
+        ctx.fillRect(vx - 8, vy - 8, vw + 16, vh + 16);
+      }
+
+      const vg = ctx.createLinearGradient(vx, vy, vx, vy + vh);
+      vg.addColorStop(0, "rgba(0,0,0,0.22)");
+      vg.addColorStop(0.45, "rgba(0,0,0,0)");
+      vg.addColorStop(1, "rgba(0,0,0,0.24)");
+      ctx.fillStyle = vg;
+      ctx.fillRect(vx - 8, vy - 8, vw + 16, vh + 16);
+
+      ctx.restore();
+      } catch (_) {
+        try { ctx.restore(); } catch (e) { /* ignore */ }
+      }
+      requestAnimationFrame(frame);
+    }
+
+    resize();
+    seedField();
+    beginWarp();
+    loadAllTextures();
+    requestAnimationFrame(frame);
+    setTimeout(() => {
+      try { galaxy = buildGalaxy(); } catch (_) { galaxy = null; }
+      try { clouds = buildClouds(); } catch (_) { clouds = null; }
+    }, 40);
+
+    let audioStarted = false;
+    let flightAudio = null;
+
+    function startHum() {
+      if (audioStarted) return;
+      audioStarted = true;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      const audioCtx = new AC();
+      const master = audioCtx.createGain();
+      master.gain.value = 0.045;
+      master.connect(audioCtx.destination);
+
+      const osc1 = audioCtx.createOscillator();
+      osc1.type = "sine";
+      osc1.frequency.value = 46;
+      const g1 = audioCtx.createGain();
+      g1.gain.value = 0.8;
+      osc1.connect(g1).connect(master);
+
+      const osc2 = audioCtx.createOscillator();
+      osc2.type = "triangle";
+      osc2.frequency.value = 92;
+      const f2 = audioCtx.createBiquadFilter();
+      f2.type = "lowpass";
+      f2.frequency.value = 220;
+      const g2 = audioCtx.createGain();
+      g2.gain.value = 0.16;
+      osc2.connect(f2).connect(g2).connect(master);
+
+      const lfo = audioCtx.createOscillator();
+      lfo.frequency.value = 0.07;
+      const lfoGain = audioCtx.createGain();
+      lfoGain.gain.value = 2.4;
+      lfo.connect(lfoGain).connect(osc1.frequency);
+
+      const noiseLen = audioCtx.sampleRate * 2;
+      const noiseBuf = audioCtx.createBuffer(1, noiseLen, audioCtx.sampleRate);
+      const data = noiseBuf.getChannelData(0);
+      let brown = 0;
+      for (let i = 0; i < noiseLen; i++) {
+        brown = (brown + (Math.random() * 2 - 1) * 0.02) * 0.985;
+        data[i] = brown * 3.2;
+      }
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = noiseBuf;
+      noise.loop = true;
+      const nf = audioCtx.createBiquadFilter();
+      nf.type = "lowpass";
+      nf.frequency.value = 160;
+      const ng = audioCtx.createGain();
+      ng.gain.value = 0.28;
+      noise.connect(nf).connect(ng).connect(master);
+
+      const shimmer = audioCtx.createBiquadFilter();
+      shimmer.type = "bandpass";
+      shimmer.frequency.value = 740;
+      shimmer.Q.value = 0.65;
+      const sg = audioCtx.createGain();
+      sg.gain.value = 0;
+      noise.connect(shimmer).connect(sg).connect(master);
+
+      const burst = audioCtx.createGain();
+      burst.gain.value = 0;
+      const burstFilter = audioCtx.createBiquadFilter();
+      burstFilter.type = "bandpass";
+      burstFilter.frequency.value = 420;
+      burstFilter.Q.value = 0.8;
+      noise.connect(burstFilter).connect(burst).connect(master);
+
+      osc1.start();
+      osc2.start();
+      lfo.start();
+      noise.start();
+      flightAudio = { audioCtx, osc1, osc2, nf, sg, shimmer, burst, burstFilter };
+    }
+
+    function updateFlightAudio() {
+      if (!flightAudio) return;
+      const w = scene.warp;
+      const now = flightAudio.audioCtx.currentTime;
+      flightAudio.osc1.frequency.setTargetAtTime(40 + w * 16, now, 0.35);
+      flightAudio.osc2.frequency.setTargetAtTime(80 + w * 28, now, 0.35);
+      flightAudio.nf.frequency.setTargetAtTime(140 + w * 260, now, 0.4);
+      flightAudio.sg.gain.setTargetAtTime(w * w * 0.2, now, 0.25);
+      flightAudio.shimmer.frequency.setTargetAtTime(680 + w * 820, now, 0.3);
+    }
+
+    function punchAudio(mode) {
+      if (!flightAudio || mode === "orbit" || mode === "warp") return;
+      const now = flightAudio.audioCtx.currentTime;
+      const jump = mode === "jump";
+      flightAudio.burstFilter.frequency.setTargetAtTime(jump ? 680 : 320, now, 0.05);
+      const g = flightAudio.burst.gain;
+      g.cancelScheduledValues(now);
+      g.setValueAtTime(0.0001, now);
+      g.exponentialRampToValueAtTime(jump ? 0.45 : 0.32, now + 0.04);
+      g.exponentialRampToValueAtTime(0.0001, now + (jump ? 1.15 : 0.75));
+    }
+
+    const root = document.documentElement;
+
+    function isFullscreen() {
+      return !!(document.fullscreenElement || document.webkitFullscreenElement);
+    }
+
+    let wakeLock = null;
+    let wakeLockBusy = false;
+    let wakeLockPending = false;
+
+    function shouldHoldWakeLock() {
+      return document.visibilityState === "visible" && (isFullscreen() || wakeLockPending);
+    }
+
+    async function requestWakeLock() {
+      if (!("wakeLock" in navigator) || wakeLockBusy || wakeLock) return;
+      wakeLockBusy = true;
+      try {
+        const lock = await navigator.wakeLock.request("screen");
+        if (!shouldHoldWakeLock()) {
+          try { await lock.release(); } catch (_) { /* ignore */ }
+          return;
+        }
+        wakeLock = lock;
+        wakeLock.addEventListener("release", () => {
+          wakeLock = null;
+          if (shouldHoldWakeLock()) {
+            setTimeout(() => { requestWakeLock(); }, 500);
+          }
+        });
+      } catch (_) {
+        /* unsupported, denied, or insecure context (file://) */
+      } finally {
+        wakeLockBusy = false;
+      }
+    }
+
+    async function releaseWakeLock() {
+      if (!wakeLock) return;
+      try {
+        await wakeLock.release();
+      } catch (_) { /* ignore */ }
+      wakeLock = null;
+    }
+
+    async function syncWakeLock() {
+      if (shouldHoldWakeLock()) await requestWakeLock();
+      else await releaseWakeLock();
+    }
+
+    document.addEventListener("fullscreenchange", syncWakeLock);
+    document.addEventListener("webkitfullscreenchange", syncWakeLock);
+    document.addEventListener("visibilitychange", syncWakeLock);
+
+    setInterval(() => {
+      if (shouldHoldWakeLock() && !wakeLock) requestWakeLock();
+    }, 20000);
+
+    document.addEventListener("click", async () => {
+      startHum();
+      if (!isFullscreen()) {
+        // Request during the user gesture; drop it if fullscreen never engages.
+        wakeLockPending = true;
+        requestWakeLock();
+        try {
+          const req = root.requestFullscreen || root.webkitRequestFullscreen;
+          if (req) await req.call(root);
+        } catch (_) { /* ignore */ }
+        wakeLockPending = false;
+      }
+      await syncWakeLock();
+    });
+  </script>
+</body>
+</html>

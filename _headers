@@ -1,0 +1,20 @@
+/*
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet, noimageindex
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Cross-Origin-Opener-Policy: same-origin
+
+# Ensure WebAssembly loads correctly (Doom engine)
+/*.wasm
+  Content-Type: application/wasm
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet, noimageindex
+
+/*.data
+  Content-Type: application/octet-stream
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet, noimageindex
+
+/*.wad
+  Content-Type: application/octet-stream
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet, noimageindex
